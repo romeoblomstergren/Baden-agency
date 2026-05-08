@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import AIVesselSearch from './AIVesselSearch'
 import VesselSearch from './VesselSearch'
 import AIVesselSearch from './AIVesselSearch'
 import { updateOperation, deleteOperation } from '../hooks/useOperations'
