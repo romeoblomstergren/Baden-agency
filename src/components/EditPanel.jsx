@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import AIVesselSearch from './AIVesselSearch'
 import VesselSearch from './VesselSearch'
-import AIVesselSearch from './AIVesselSearch'
 import { updateOperation, deleteOperation } from '../hooks/useOperations'
 import { useOperationLogs } from '../hooks/usePortInfo'
 import { OP_TYPES, VESSEL_STATUSES, ENTRY_STATUSES, formatDate, formatMoney } from '../lib/constants'
