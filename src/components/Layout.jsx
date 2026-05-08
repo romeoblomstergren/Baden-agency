@@ -19,7 +19,9 @@ const NAV_FULL = [
   { to:'/ports',     label:'Port Info'  },
   { to:'/soa',       label:'SOA'        },
   { to:'/templates', label:'Templates'  },
+  { to:'/vessels',   label:'Vessels'    },
   { to:'/templates', label:'Templates'  },
+  { to:'/vessels',   label:'Vessels'    },
 ]
 
 export default function Layout({ children }) {

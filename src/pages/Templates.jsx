@@ -18,15 +18,26 @@ function opaTemplate(op) {
   const mmsi = op.mmsi || '[MMSI]'
   const client = op.client_name || '[PRINCIPAL]'
   const subAgent = op.sub_agent || '[SUB-AGENT]'
+  const commodity = op.commodity || '${commodity}'
+  const quantity = op.quantity || '${quantity}'
+  const terms = op.cargo_terms || '${terms}'
+  const vesselType = op.vessel_type || '${vesselType}'
+  const callSign = op.call_sign || '${callSign}'
+  const flag = op.flag || '${flag}'
+  const gt = op.gt || '${gt}'
+  const dwt = op.dwt || '${dwt}'
+  const loa = op.loa || '${loa}'
+  const beam = op.beam || '${beam}'
+  const yearBuilt = op.year_built || '${yearBuilt}'
 
-  return `${v} - ${port} - [OPERATION TYPE] - [QUANTITY] [COMMODITY]
+  return `${v} - ${port} - [OPERATION TYPE] - ${quantity} ${commodity}
 
 TO: ${subAgent.toUpperCase()} - AGENCY DEPT.
 FM: BADEN AGENCY - [OPERATOR NAME] - SERVICE PROVIDER
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 PORT                             \t- ${port}
-CARGO                         \t- [COMMODITY]
-QUANTITY                     \t- [QUANTITY]
+CARGO                         \t- ${commodity}
+QUANTITY                     \t- ${quantity}
 ETA\t\t\t\t\t- ${eta} AGW. WP. @ ${port} ANCHORAGE
 POB                               \t- PLEASE ADVISE
 ETB                               \t- ${etb}
@@ -58,27 +69,27 @@ ETB\t\t\t\t\t: ${etb}
 ETC/S\t\t\t\t: PLEASE ADVISE
 Operation\t\t\t: [DISCHARGING / LOADING]
 Berth(s)\t\t\t\t: 1 SPSB ${port}
-Cargo\t\t\t\t: [COMMODITY]
-Quantity\t\t\t\t: [QUANTITY]
+Cargo\t\t\t\t: ${commodity}
+Quantity\t\t\t\t: ${quantity}
 
 VESSEL DETAILS:
 --------------------------
 IMO\t\t\t\t\t: ${imo}
 Name\t\t\t\t: ${v}
-Detailed vessel type\t: [VESSEL TYPE]
+Detailed vessel type\t: ${vesselType}
 MMSI\t\t\t\t: ${mmsi}
-Call sign\t\t\t\t: [CALL SIGN]
-Flag\t\t\t\t\t: [FLAG]
-Gross Tonnage\t\t: [GT] MTS.
-DWT\t\t\t\t\t: [DWT] MTS.
-Length Overall\t\t: [LOA] M.
-Breadth Extreme\t\t: [BEAM] M.
-Year built\t\t\t\t: [YEAR]
+Call sign\t\t\t\t: ${callSign}
+Flag\t\t\t\t\t: ${flag}
+Gross Tonnage\t\t: ${gt} MTS.
+DWT\t\t\t\t\t: ${dwt} MTS.
+Length Overall\t\t: ${loa} M.
+Breadth Extreme\t\t: ${beam} M.
+Year built\t\t\t\t: ${yearBuilt}
 
 COMMUNICATION DETAILS:
 -----------------------------------------
 MASTER
-Call sign\t\t\t\t: [CALL SIGN]
+Call sign\t\t\t\t: ${callSign}
 
 RECEIVER'S AGENT:
 -------------------------------
@@ -116,7 +127,7 @@ SCOPE OF WORK:
 
 DISBURSEMENT ACCOUNT:
 -----------------------------------------
-[FREE OUT / LINER IN]
+${terms}
 
 - ANY / ALL cargo related costs to be for Chrtr's / Receiver's account.
 - ANY / ALL taxes / dues levied (calculated) on freight (cargo) to be for Chrtr's / Receiver's account.
@@ -235,8 +246,8 @@ TO: [PORT AGENT NAME] - AGENCY DEPT.
 FM: BADEN AGENCY - [OPERATOR NAME] - ON BEHALF OF ${client.toUpperCase()}
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 PORT                             \t- ${port}
-CARGO                         \t- [COMMODITY]
-QUANTITY                     \t- [QUANTITY]
+CARGO                         \t- ${commodity}
+QUANTITY                     \t- ${quantity}
 ETA\t\t\t\t\t- ${eta} AGW. WP.
 ETB                               \t- ${etb}
 ETS\t\t\t\t\t- ${etd}
@@ -253,8 +264,8 @@ Port\t\t\t\t\t: ${port}
 IMO\t\t\t\t\t: ${imo}
 MMSI\t\t\t\t: ${mmsi}
 Operation\t\t\t: [DISCHARGING / LOADING]
-Cargo\t\t\t\t: [COMMODITY]
-Quantity\t\t\t\t: [QUANTITY]
+Cargo\t\t\t\t: ${commodity}
+Quantity\t\t\t\t: ${quantity}
 ETA\t\t\t\t\t: ${eta}
 ETB\t\t\t\t\t: ${etb}
 ETD\t\t\t\t\t: ${etd}

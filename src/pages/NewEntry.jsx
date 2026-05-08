@@ -8,10 +8,11 @@ const YEARS = Array.from({ length: 7 }, (_, i) => CURRENT_YEAR - i)
 const BLANK = {
   op_type:'', year:CURRENT_YEAR, vessel_name:'', port:'',
   sub_agent:'', client_name:'', op_date:new Date().toISOString().split('T')[0],
-  imo:'', mmsi:'', eta:'', etb:'', etd:'',
+  imo:'', mmsi:'', eta:'', etb:'', etc:'', etd:'', eta_ampm:'', etb_ampm:'', etc_ampm:'', etd_ampm:'', add_services_info:'', add_inv_out:'', add_inv_in:'',
   inv_out:'', inv_in:'', inv_currency:'EUR',
   income_local:'', income_eur:'',
   add_services:false, entry_status:'Open', vessel_status:'', notes:'', operator:'Nicolai Baden',
+  commodity:'', quantity:'', cargo_terms:'', vessel_type:'', call_sign:'', flag:'', gt:'', dwt:'', loa:'', beam:'', year_built:'',
 }
 
 export default function NewEntry() {
@@ -55,7 +56,15 @@ export default function NewEntry() {
         imo:          form.imo          || null,
         eta:          form.eta          || null,
         etb:          form.etb          || null,
+        etc:          form.etc          || null,
         etd:          form.etd          || null,
+        eta_ampm:     form.eta_ampm     || null,
+        etb_ampm:     form.etb_ampm     || null,
+        etc_ampm:     form.etc_ampm     || null,
+        etd_ampm:     form.etd_ampm     || null,
+        add_services_info: form.add_services_info || null,
+        add_inv_out:  form.add_inv_out  ? Number(form.add_inv_out)  : null,
+        add_inv_in:   form.add_inv_in   ? Number(form.add_inv_in)   : null,
         mmsi:         form.mmsi         || null,
         inv_out:      form.inv_out      ? Number(form.inv_out)      : null,
         inv_in:       form.inv_in       ? Number(form.inv_in)       : null,
@@ -67,6 +76,17 @@ export default function NewEntry() {
         vessel_status:form.vessel_status || null,
         notes:        form.notes        || null,
         operator:     form.operator     || null,
+        commodity:    form.commodity    || null,
+        quantity:     form.quantity     || null,
+        cargo_terms:  form.cargo_terms  || null,
+        vessel_type:  form.vessel_type  || null,
+        call_sign:    form.call_sign    || null,
+        flag:         form.flag         || null,
+        gt:           form.gt           || null,
+        dwt:          form.dwt          || null,
+        loa:          form.loa          || null,
+        beam:         form.beam         || null,
+        year_built:   form.year_built   || null,
       }
       const created = await createOperation(payload)
       setSuccess(`✓ Created: ${created.ref}`)
@@ -151,6 +171,50 @@ export default function NewEntry() {
               <input type="date" value={form.op_date} onChange={e=>set('op_date',e.target.value)} />
             </div>
             <div className="form-group">
+              <label className="form-label">ETA</label>
+              <div style={{display:'flex',gap:6}}>
+                <input type="date" value={form.eta} onChange={e=>set('eta',e.target.value)} style={{flex:1}} />
+                <select value={form.eta_ampm} onChange={e=>set('eta_ampm',e.target.value)} style={{width:'auto'}}>
+                  <option value="">AM/PM</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">ETB</label>
+              <div style={{display:'flex',gap:6}}>
+                <input type="date" value={form.etb} onChange={e=>set('etb',e.target.value)} style={{flex:1}} />
+                <select value={form.etb_ampm} onChange={e=>set('etb_ampm',e.target.value)} style={{width:'auto'}}>
+                  <option value="">AM/PM</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">ETC</label>
+              <div style={{display:'flex',gap:6}}>
+                <input type="date" value={form.etc} onChange={e=>set('etc',e.target.value)} style={{flex:1}} />
+                <select value={form.etc_ampm} onChange={e=>set('etc_ampm',e.target.value)} style={{width:'auto'}}>
+                  <option value="">AM/PM</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">ETD</label>
+              <div style={{display:'flex',gap:6}}>
+                <input type="date" value={form.etd} onChange={e=>set('etd',e.target.value)} style={{flex:1}} />
+                <select value={form.etd_ampm} onChange={e=>set('etd_ampm',e.target.value)} style={{width:'auto'}}>
+                  <option value="">AM/PM</option>
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
               <label className="form-label">Port *</label>
               <input value={form.port} onChange={e=>set('port',e.target.value)}
                 list="ports-list" placeholder="Dakar, Senegal" required />
@@ -196,6 +260,25 @@ export default function NewEntry() {
                 <option value="true">Yes</option>
               </select>
             </div>
+            {form.add_services && (
+              <>
+                <div className="form-group form-full">
+                  <label className="form-label">Additional services — description</label>
+                  <input value={form.add_services_info} onChange={e=>set('add_services_info',e.target.value)}
+                    placeholder="e.g. Crew change, Bunker supply, Husbandry…" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Add. services inv out</label>
+                  <input type="number" step="0.01" value={form.add_inv_out}
+                    onChange={e=>set('add_inv_out',e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Add. services inv in</label>
+                  <input type="number" step="0.01" value={form.add_inv_in}
+                    onChange={e=>set('add_inv_in',e.target.value)} placeholder="0.00" />
+                </div>
+              </>
+            )}
             <div className="form-group">
               <label className="form-label">Invoice Out</label>
               <input type="number" step="0.01" value={form.inv_out}
@@ -228,6 +311,57 @@ export default function NewEntry() {
                 </span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Cargo & Vessel Details */}
+        <div className="card" style={{ padding:18, marginBottom:14 }}>
+          <div className="section-title">Cargo details</div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Commodity</label>
+              <input value={form.commodity} onChange={e=>set('commodity',e.target.value)} placeholder="Wheat in bulk, Clinker…" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Quantity (MTS)</label>
+              <input value={form.quantity} onChange={e=>set('quantity',e.target.value)} placeholder="e.g. 23,998.160 MTS." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Terms</label>
+              <input value={form.cargo_terms} onChange={e=>set('cargo_terms',e.target.value)} placeholder="FREE OUT, LINER IN…" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Vessel Type</label>
+              <input value={form.vessel_type} onChange={e=>set('vessel_type',e.target.value)} placeholder="Bulk Carrier, Tanker…" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Call Sign</label>
+              <input value={form.call_sign} onChange={e=>set('call_sign',e.target.value)} style={{fontFamily:'var(--mono)'}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Flag</label>
+              <input value={form.flag} onChange={e=>set('flag',e.target.value)} placeholder="Norway, Malta…" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">GT (MTS)</label>
+              <input value={form.gt} onChange={e=>set('gt',e.target.value)} style={{fontFamily:'var(--mono)'}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">DWT (MTS)</label>
+              <input value={form.dwt} onChange={e=>set('dwt',e.target.value)} style={{fontFamily:'var(--mono)'}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">LOA (M)</label>
+              <input value={form.loa} onChange={e=>set('loa',e.target.value)} style={{fontFamily:'var(--mono)'}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Beam (M)</label>
+              <input value={form.beam} onChange={e=>set('beam',e.target.value)} style={{fontFamily:'var(--mono)'}} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Year Built</label>
+              <input value={form.year_built} onChange={e=>set('year_built',e.target.value)} style={{fontFamily:'var(--mono)'}} />
+            </div>
           </div>
         </div>
 

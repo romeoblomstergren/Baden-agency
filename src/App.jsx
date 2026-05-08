@@ -11,7 +11,7 @@ import Finance     from './pages/Finance'
 import PortInfo    from './pages/PortInfo'
 import SOA        from './pages/SOA'
 import Templates  from './pages/Templates'
-import Templates  from './pages/Templates'
+import Vessels    from './pages/Vessels'
 import './styles.css'
 
 function Protected({ children }) {
@@ -39,7 +39,7 @@ export default function App() {
         <Route path="/ports"    element={<Protected><PortInfo/></Protected>}/>
         <Route path="/soa"      element={<Protected><SOA/></Protected>}/>
         <Route path="/templates" element={<Protected><Templates/></Protected>}/>
-        <Route path="/templates" element={<Protected><Templates/></Protected>}/>
+        <Route path="/vessels"   element={<Protected><Vessels/></Protected>}/>
         <Route path="*"         element={<Navigate to="/" replace/>}/>
       </Routes>
     </BrowserRouter>

@@ -280,7 +280,7 @@ export default function Operational() {
               onClick={() => setActiveFilter(op === 'All' ? null : op)}
               style={{
                 padding: '6px 14px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600,
-                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                cursor: 'pointer', transition: 'all 0.15s',
                 background: activeFilter === (op === 'All' ? null : op) ? 'var(--navy)' : 'var(--surface)',
                 color: activeFilter === (op === 'All' ? null : op) ? '#fff' : 'var(--muted)',
                 border: '1px solid var(--border)',

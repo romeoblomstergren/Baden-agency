@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import VesselSearch from './VesselSearch'
 import { updateOperation, deleteOperation } from '../hooks/useOperations'
 import { useOperationLogs } from '../hooks/usePortInfo'
 import { OP_TYPES, VESSEL_STATUSES, ENTRY_STATUSES, formatDate, formatMoney } from '../lib/constants'
@@ -22,6 +23,7 @@ export default function EditPanel({ operation, onClose, onSaved }) {
     setSaving(true); setError('')
     try {
       const {id,created_at,updated_at,created_by,updated_by,net,_tab,...rest} = form
+      console.log("SAVING:", JSON.stringify(rest))
       await updateOperation(operation.id, rest)
       onSaved(); onClose()
     } catch(e) { setError(e.message) }
@@ -120,9 +122,26 @@ export default function EditPanel({ operation, onClose, onSaved }) {
 
               <div className="section-title">Core details</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
-                <div className="form-group">
+                <div className="form-group" style={{gridColumn:'1/-1'}}>
                   <label className="form-label">Vessel Name</label>
-                  <input value={form.vessel_name||''} onChange={e=>set('vessel_name',e.target.value)}/>
+                  <input value={form.vessel_name||''} onChange={e=>set('vessel_name',e.target.value)} style={{marginBottom:6}}/>
+                  <VesselSearch
+                    value={''}
+                    onChange={() => {}}
+                    onVesselSelect={({name,imo,mmsi,call_sign,flag,vessel_type,gt,dwt,loa,beam,year_built}) => {
+                      if (name)        set('vessel_name', name)
+                      if (imo)         set('imo', imo)
+                      if (mmsi)        set('mmsi', mmsi)
+                      if (call_sign)   set('call_sign', call_sign)
+                      if (flag)        set('flag', flag)
+                      if (vessel_type) set('vessel_type', vessel_type)
+                      if (gt)          set('gt', gt)
+                      if (dwt)         set('dwt', dwt)
+                      if (loa)         set('loa', loa)
+                      if (beam)        set('beam', beam)
+                      if (year_built)  set('year_built', year_built)
+                    }}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Date</label>
@@ -216,6 +235,53 @@ export default function EditPanel({ operation, onClose, onSaved }) {
                 )}
               </div>
 
+              <div className="section-title">Cargo details</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
+                <div className="form-group">
+                  <label className="form-label">Commodity</label>
+                  <input value={form.commodity||''} onChange={e=>set('commodity',e.target.value)} placeholder="Wheat, Clinker…"/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Quantity</label>
+                  <input value={form.quantity||''} onChange={e=>set('quantity',e.target.value)} placeholder="23,998 MTS."/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Terms</label>
+                  <input value={form.cargo_terms||''} onChange={e=>set('cargo_terms',e.target.value)} placeholder="FREE OUT…"/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Vessel Type</label>
+                  <input value={form.vessel_type||''} onChange={e=>set('vessel_type',e.target.value)}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Call Sign</label>
+                  <input value={form.call_sign||''} onChange={e=>set('call_sign',e.target.value)} style={{fontFamily:'var(--mono)'}}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Flag</label>
+                  <input value={form.flag||''} onChange={e=>set('flag',e.target.value)}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">GT</label>
+                  <input value={form.gt||''} onChange={e=>set('gt',e.target.value)} style={{fontFamily:'var(--mono)'}}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">DWT</label>
+                  <input value={form.dwt||''} onChange={e=>set('dwt',e.target.value)} style={{fontFamily:'var(--mono)'}}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">LOA</label>
+                  <input value={form.loa||''} onChange={e=>set('loa',e.target.value)} style={{fontFamily:'var(--mono)'}}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Beam</label>
+                  <input value={form.beam||''} onChange={e=>set('beam',e.target.value)} style={{fontFamily:'var(--mono)'}}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Year Built</label>
+                  <input value={form.year_built||''} onChange={e=>set('year_built',e.target.value)} style={{fontFamily:'var(--mono)'}}/>
+                </div>
+              </div>
               <div className="section-title">Operator</div>
               <div className="form-group" style={{marginBottom:20}}>
                 <select value={form.operator||''} onChange={e=>set('operator',e.target.value)}>
