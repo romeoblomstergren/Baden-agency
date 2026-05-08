@@ -262,6 +262,7 @@ export default function Operational() {
 
   return (
     <div className="page">
+      <Alerts />
 
       {/* ── Kanban board ── */}
       <div style={{ marginBottom: 24 }}>
