@@ -4,6 +4,7 @@ import { useTasks, DEFAULT_TASKS, CATEGORY_LABELS } from '../hooks/useTasks'
 import { VesselStatusBadge, EntryStatusBadge, OpTypeBadge } from '../components/Layout'
 import EditPanel from '../components/EditPanel'
 import TrackingModal from '../components/TrackingModal'
+import Alerts from '../components/Alerts'
 import LiveMap from '../components/LiveMap'
 import { formatDate, formatMoney, VESSEL_STATUSES, ENTRY_STATUSES, OP_TYPES, CURRENT_YEAR } from '../lib/constants'
 
