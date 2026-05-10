@@ -116,10 +116,8 @@ export default function EditPanel({ operation, onClose, onSaved }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const save = async () => {
-    console.log('SAVE CLICKED, form:', JSON.stringify(form).slice(0,200))
     setSaving(true); setError('')
     try {
-      // Only send known DB columns — strip computed/UI fields
       const ALLOWED = new Set([
         'op_type','year','vessel_name','port','sub_agent','client_name','op_date',
         'imo','mmsi','eta','etb','etc','etd','eta_ampm','etb_ampm','etc_ampm','etd_ampm',
@@ -132,12 +130,19 @@ export default function EditPanel({ operation, onClose, onSaved }) {
       const payload = Object.fromEntries(
         Object.entries(form).filter(([k]) => ALLOWED.has(k))
       )
-      console.log('Saving payload:', payload)
-      await updateOperation(operation.id, payload)
+      console.log('Saving id:', operation.id, 'payload keys:', Object.keys(payload))
+      const { error: sbError } = await import('../lib/supabase').then(m =>
+        m.supabase.from('operations').update(payload).eq('id', operation.id)
+      )
+      if (sbError) {
+        console.error('Supabase error:', sbError)
+        throw new Error(sbError.message)
+      }
+      console.log('Save successful!')
       onSaved(); onClose()
     } catch(e) {
       console.error('Save error:', e)
-      setError(e.message)
+      setError(e.message || 'Save failed')
     }
     finally { setSaving(false) }
   }
