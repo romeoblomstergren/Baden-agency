@@ -18,6 +18,7 @@ import Contacts     from './pages/Contacts'
 import PortOverview from './pages/PortOverview'
 import Health       from './pages/Health'
 import './styles.css'
+import { AIProvider } from './context/AIContext'
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -32,6 +33,7 @@ function Protected({ children }) {
 
 export default function App() {
   return (
+    <AIProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/login"         element={<Login/>}/>
@@ -53,5 +55,6 @@ export default function App() {
         <Route path="*"              element={<Navigate to="/" replace/>}/>
       </Routes>
     </BrowserRouter>
+    </AIProvider>
   )
 }
