@@ -1,192 +1,188 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import { formatDate } from '../lib/constants'
-import { VesselStatusBadge, EntryStatusBadge, OpTypeBadge } from '../components/Layout'
-import EditPanel from '../components/EditPanel'
+import { useState } from 'react'
 
-function daysUntil(dateStr) {
-  if (!dateStr) return null
-  return Math.ceil((new Date(dateStr + 'T00:00:00') - new Date().setHours(0,0,0,0)) / 86400000)
+const SOURCE_COLORS = {
+  'AISHub (live AIS)': { bg: 'var(--green-bg)', color: 'var(--green)', label: '🟢 Live AIS' },
+  'VesselFinder':      { bg: 'var(--blue-bg)',  color: 'var(--blue)',  label: '🔵 VesselFinder' },
 }
 
-function ETAChip({ label, dateStr }) {
-  if (!dateStr) return null
-  const days = daysUntil(dateStr)
-  const isOverdue = days < 0, isToday = days === 0, isSoon = days > 0 && days <= 2
-  const bg    = isOverdue ? 'var(--red-bg)'   : isToday ? 'var(--amber-bg)' : isSoon ? '#FFF8E1' : 'var(--bg)'
-  const color = isOverdue ? 'var(--red)'      : isToday ? 'var(--amber)'    : isSoon ? '#854F0B' : 'var(--muted)'
-  const text  = isOverdue ? `${Math.abs(days)}d overdue` : isToday ? 'Today' : `in ${days}d`
-  return (
-    <span style={{ background: bg, color, fontSize: '0.72rem', fontWeight: 600, padding: '2px 8px', borderRadius: 20, border: isOverdue ? '1px solid var(--red)' : 'none' }}>
-      {label}: {formatDate(dateStr)} ({text})
-    </span>
-  )
+const STATUS_STYLE = {
+  'Expected':  { bg: '#f3f4f6', color: '#6b7280' },
+  'Alongside': { bg: 'var(--amber-bg)', color: 'var(--amber)' },
+  'In Port':   { bg: 'var(--blue-bg)',  color: 'var(--blue)'  },
+  'Underway':  { bg: 'var(--green-bg)', color: 'var(--green)' },
 }
+
+const KNOWN_PORTS = [
+  'Tema', 'Abidjan', 'Dakar', 'Conakry', 'Freetown', 'Monrovia',
+  'Cotonou', 'Lagos', 'Douala', 'Libreville', 'Matadi', 'Bata',
+  'Nouakchott', 'Rotterdam', 'Antwerp', 'Hamburg', 'Singapore',
+]
 
 export default function PortOverview() {
-  const [operations, setOperations] = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [portFilter, setPortFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [editOp, setEditOp]         = useState(null)
+  const [port, setPort]       = useState('')
+  const [country, setCountry] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult]   = useState(null)
+  const [error, setError]     = useState('')
 
-  async function load() {
-    setLoading(true)
-    let q = supabase
-      .from('operations')
-      .select('*')
-      .in('vessel_status', ['Alongside', 'In Port', 'Underway', 'Expected'])
-      .neq('entry_status', 'Closed')
-      .order('eta', { ascending: true })
-
-    if (portFilter)   q = q.ilike('port', `%${portFilter}%`)
-    if (statusFilter) q = q.eq('vessel_status', statusFilter)
-
-    const { data } = await q
-    setOperations(data || [])
-    setLoading(false)
+  async function search(portName) {
+    const target = portName ?? port.trim()
+    if (!target) return
+    setLoading(true); setError(''); setResult(null)
+    try {
+      const res = await fetch('/api/port-lineup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port: target, country: country.trim() || undefined }),
+      })
+      const data = await res.json()
+      if (data.error && !data.vessels?.length) throw new Error(data.error)
+      setResult(data)
+    } catch(e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { load() }, [portFilter, statusFilter])
-
-  const ports = [...new Set(operations.map(o => o.port).filter(Boolean))].sort()
-
-  // Group by port
-  const grouped = operations.reduce((acc, op) => {
-    const port = op.port || 'Unknown Port'
-    if (!acc[port]) acc[port] = []
-    acc[port].push(op)
-    return acc
-  }, {})
-
-  const STATUS_COLORS = {
-    'Alongside': { color: 'var(--amber)', bg: 'var(--amber-bg)', dot: '🟡' },
-    'In Port':   { color: 'var(--blue)',  bg: 'var(--blue-bg)',  dot: '🔵' },
-    'Underway':  { color: 'var(--green)', bg: 'var(--green-bg)', dot: '🟢' },
-    'Expected':  { color: 'var(--muted)', bg: 'var(--bg)',       dot: '⚪' },
-  }
+  const sourceStyle = result?.source
+    ? (Object.entries(SOURCE_COLORS).find(([k]) => result.source.startsWith(k))?.[1] ?? { bg: 'var(--amber-bg)', color: 'var(--amber)', label: '🟡 ' + result.source })
+    : null
 
   return (
-    <div className="page">
+    <div className="page" style={{ maxWidth: 900 }}>
       <div className="page-header">
         <div>
-          <h1>Port Overview</h1>
+          <h1>Port Lineup</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginTop: 2 }}>
-            Expected & active vessels by port
+            Live vessel arrivals & expected calls at any port worldwide
           </p>
         </div>
-        <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
-          {loading ? '…' : `${operations.length} vessel${operations.length !== 1 ? 's' : ''} across ${Object.keys(grouped).length} port${Object.keys(grouped).length !== 1 ? 's' : ''}`}
-        </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <input
-          placeholder="Filter by port…"
-          value={portFilter}
-          onChange={e => setPortFilter(e.target.value)}
-          style={{ flex: 1, minWidth: 160 }}
-        />
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
-          <option value="">All statuses</option>
-          <option value="Alongside">🟡 Alongside</option>
-          <option value="In Port">🔵 In Port</option>
-          <option value="Underway">🟢 Underway</option>
-          <option value="Expected">⚪ Expected</option>
-        </select>
-        <button onClick={() => { setPortFilter(''); setStatusFilter('') }} className="btn-secondary btn-sm">Clear</button>
-      </div>
-
-      {loading ? <div className="spinner" /> : operations.length === 0 ? (
-        <div className="card empty">
-          <div className="empty-icon">⚓</div>
-          <p>No active vessels found.</p>
+      {/* Search */}
+      <div className="card" style={{ padding: '18px 20px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <input
+            value={port}
+            onChange={e => setPort(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && search()}
+            placeholder="Port name e.g. Tema, Rotterdam, Singapore…"
+            style={{ flex: 2, minWidth: 200 }}
+            list="port-suggestions"
+          />
+          <datalist id="port-suggestions">
+            {KNOWN_PORTS.map(p => <option key={p} value={p} />)}
+          </datalist>
+          <input
+            value={country}
+            onChange={e => setCountry(e.target.value)}
+            placeholder="Country (optional)"
+            style={{ flex: 1, minWidth: 120 }}
+          />
+          <button
+            onClick={() => search()}
+            disabled={!port.trim() || loading}
+            className="btn-primary"
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {loading ? '◌ Searching…' : '🔍 Search port'}
+          </button>
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-          {Object.entries(grouped).map(([port, ops]) => (
-            <div key={port}>
-              {/* Port header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>📍 {port}</div>
-                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                  {ops.length} vessel{ops.length !== 1 ? 's' : ''}
-                </span>
-              </div>
 
-              {/* Vessel cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {ops.map(op => {
-                  const sc = STATUS_COLORS[op.vessel_status] || STATUS_COLORS['Expected']
-                  const etdDays = daysUntil(op.etd)
-                  const isOverdue = op.etd && etdDays < 0
-                  return (
-                    <div key={op.id}
-                      onClick={() => setEditOp(op)}
-                      className="card"
-                      style={{ padding: '14px 18px', cursor: 'pointer', borderLeft: `4px solid ${sc.color}`, transition: 'box-shadow 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.08)'}
-                      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                        {/* Left: vessel info */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{op.vessel_name || '—'}</span>
-                            <OpTypeBadge code={op.op_type} />
-                            <span style={{ background: sc.bg, color: sc.color, fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 20 }}>
-                              {sc.dot} {op.vessel_status}
-                            </span>
-                            {isOverdue && (
-                              <span style={{ background: 'var(--red-bg)', color: 'var(--red)', fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20, border: '1px solid var(--red)' }}>
-                                ⚠️ ETD overdue {Math.abs(etdDays)}d
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Cargo */}
-                          {(op.commodity || op.cargo_terms) && (
-                            <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: 6 }}>
-                              📦 {[op.commodity, op.quantity, op.cargo_terms].filter(Boolean).join(' · ')}
-                              {op.commodity_2 && ` + ${op.commodity_2}${op.quantity_2 ? ' ' + op.quantity_2 : ''}`}
-                            </div>
-                          )}
-
-                          {/* Vessel specs */}
-                          {(op.vessel_type || op.dwt || op.loa || op.flag) && (
-                            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: 6, fontFamily: 'var(--mono)' }}>
-                              {[op.vessel_type, op.flag, op.dwt ? `${op.dwt} DWT` : '', op.loa ? `${op.loa}m LOA` : ''].filter(Boolean).join(' · ')}
-                            </div>
-                          )}
-
-                          {/* Timeline */}
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            <ETAChip label="ETA" dateStr={op.eta} />
-                            <ETAChip label="ETB" dateStr={op.etb} />
-                            <ETAChip label="ETD" dateStr={op.etd} />
-                          </div>
-                        </div>
-
-                        {/* Right: principal + ref */}
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: '0.68rem', color: 'var(--muted)', marginBottom: 4 }}>{op.ref}</div>
-                          {op.client_name && <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>👤 {op.client_name}</div>}
-                          {op.sub_agent   && <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>🤝 {op.sub_agent}</div>}
-                          {op.operator    && <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 4 }}>{op.operator}</div>}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+        {/* Quick port buttons */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
+          {KNOWN_PORTS.slice(0, 8).map(p => (
+            <button key={p}
+              onClick={() => { setPort(p); search(p) }}
+              disabled={loading}
+              style={{ padding: '4px 12px', borderRadius: 20, fontSize: '0.75rem', cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--muted)', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--navy)'; e.currentTarget.style.color = 'var(--navy)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
+            >
+              {p}
+            </button>
           ))}
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ background: 'var(--red-bg)', color: 'var(--red)', padding: '12px 16px', borderRadius: 8, marginBottom: 16, fontSize: '0.85rem' }}>
+          {error}
         </div>
       )}
 
-      {editOp && <EditPanel operation={editOp} onClose={() => setEditOp(null)} onSaved={load} />}
+      {/* Results */}
+      {result && (
+        <div>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <h2 style={{ margin: 0 }}>📍 {result.port}{result.country ? `, ${result.country}` : ''}</h2>
+            {sourceStyle && (
+              <span style={{ background: sourceStyle.bg, color: sourceStyle.color, fontSize: '0.72rem', fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>
+                {sourceStyle.label}
+              </span>
+            )}
+            {result.source?.includes('AI estimate') && (
+              <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic' }}>
+                Based on AI knowledge — verify with port authority
+              </span>
+            )}
+            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', marginLeft: 'auto' }}>
+              {result.vessels.length} vessel{result.vessels.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {result.vessels.length === 0 ? (
+            <div className="card empty">
+              <div className="empty-icon">⚓</div>
+              <p>No vessels found for this port.</p>
+            </div>
+          ) : (
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Vessel</th>
+                      <th>IMO</th>
+                      <th>Flag</th>
+                      <th>Type</th>
+                      <th>Cargo</th>
+                      <th>ETA</th>
+                      <th>Status</th>
+                      <th>Speed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.vessels.map((v, i) => {
+                      const ss = STATUS_STYLE[v.status] || STATUS_STYLE['Expected']
+                      return (
+                        <tr key={i}>
+                          <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{v.name}</td>
+                          <td><span className="ref">{v.imo || '—'}</span></td>
+                          <td style={{ color: 'var(--muted)' }}>{v.flag || '—'}</td>
+                          <td style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>{v.vessel_type || '—'}</td>
+                          <td style={{ color: 'var(--muted)', fontSize: '0.8rem', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.cargo || '—'}</td>
+                          <td style={{ color: 'var(--muted)', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{v.eta || '—'}</td>
+                          <td>
+                            {v.status ? (
+                              <span style={{ background: ss.bg, color: ss.color, fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: 20 }}>
+                                {v.status}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>{v.speed || '—'}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
