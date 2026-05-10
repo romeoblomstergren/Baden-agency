@@ -22,12 +22,12 @@ export default function LiveMap() {
 
   const statusColor = {
     'Underway':  'var(--green)',
-    'In Port':   'var(--blue)',
+    'At Anchorage':   'var(--blue)',
     'Alongside': 'var(--amber)',
   }
   const statusBg = {
     'Underway':  'var(--green-bg)',
-    'In Port':   'var(--blue-bg)',
+    'At Anchorage':   'var(--blue-bg)',
     'Alongside': 'var(--amber-bg)',
   }
 
@@ -94,7 +94,7 @@ export default function LiveMap() {
                     : '1px solid var(--border)',
                   opacity: hasTrack ? 1 : 0.5,
                 }}>
-                {v.vessel_status === 'Underway' ? '🟢' : v.vessel_status === 'In Port' ? '🔵' : '🟡'} {v.vessel_name || '—'}
+                {v.vessel_status === 'Underway' ? '🟢' : v.vessel_status === 'At Anchorage' ? '🔵' : '🟡'} {v.vessel_name || '—'}
                 {!hasTrack && ' ⚠️'}
               </button>
             )
