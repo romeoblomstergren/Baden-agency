@@ -10,7 +10,7 @@ export const DEFAULT_TASKS = {
     { category: 'documents', task: 'Port health docs prepared', sort_order: 5 },
     { category: 'daily', task: 'Daily report sent', sort_order: 6 },
   ],
-  'In Port': [
+  'At Anchorage': [
     { category: 'navigation', task: 'ETB confirmed', sort_order: 1 },
     { category: 'navigation', task: 'Pilot arranged for berthing', sort_order: 2 },
     { category: 'navigation', task: 'Tugs arranged for berthing', sort_order: 3 },
