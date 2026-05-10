@@ -1,5 +1,5 @@
 // api/port-lineup.js
-// Port lineup using DeepSeek with web search enabled
+// Real port lineup from VesselAPI AIS data, DeepSeek as fallback
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -8,109 +8,114 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body) } catch { return res.status(400).json({ error: 'Invalid JSON' }) }
   }
 
-  const { port, country } = body ?? {}
-  if (!port) return res.status(400).json({ error: 'port is required' })
+  const { port, country, locode } = body ?? {}
+  if (!port && !locode) return res.status(400).json({ error: 'port or locode is required' })
 
-  const apiKey = process.env.VITE_DEEPSEEK_API_KEY
-  if (!apiKey) return res.status(500).json({ error: 'VITE_DEEPSEEK_API_KEY not configured' })
+  const vesselKey = process.env.VESSEL_API_KEY
+  const deepseekKey = process.env.VITE_DEEPSEEK_API_KEY
 
-  try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a maritime shipping expert and port agent with deep knowledge of vessel movements worldwide.
-When asked about a port lineup, provide realistic vessel information based on your knowledge of:
-- Typical vessel traffic at that port
-- Common shipping routes and cargo types
-- Vessel sizes appropriate for the port
-- Realistic ETAs and vessel names
-
-Return ONLY valid JSON with no markdown, no explanation, no code fences.
-Schema: {
-  "vessels": [{
-    "name": "MV VESSEL NAME",
-    "imo": "1234567",
-    "flag": "Panama",
-    "vessel_type": "Bulk Carrier",
-    "dwt": "45000",
-    "cargo": "Wheat",
-    "eta": "2026-05-12",
-    "etd": "2026-05-15", 
-    "status": "Expected",
-    "principal": "Cargill",
-    "agent": null,
-    "berth": null
-  }],
-  "port_info": {
-    "name": "...",
-    "country": "...",
-    "typical_cargo": "...",
-    "max_draft": "...",
-    "note": "..."
-  }
-}`
-          },
-          {
-            role: 'user',
-            content: `Generate a realistic port lineup for ${port}${country ? ', ' + country : ''} as of today.
-Include 10-15 vessels that would typically be expected, alongside, or recently arrived.
-Use realistic vessel names (MV prefix for bulk/general, MT for tankers), IMO numbers (7 digits starting with 9), appropriate flags and cargo for this port.
-Status options: Expected, Alongside, In Port, Sailed.
-Make ETAs realistic relative to today's date (May 2026).`
-          }
-        ]
-      })
-    })
-
-    if (!response.ok) {
-      const err = await response.json()
-      return res.status(response.status).json({ error: err?.error?.message ?? 'DeepSeek error' })
-    }
-
-    const data = await response.json()
-    const text = data.choices?.[0]?.message?.content ?? '{}'
-
-    // Strip any markdown fences
-    const clean = text
-      .replace(/^```json\s*/im, '')
-      .replace(/^```\s*/im, '')
-      .replace(/```\s*$/im, '')
-      .trim()
-
+  // ── 1. Try VesselAPI port events (real AIS data) ──
+  if (vesselKey && locode) {
     try {
-      const parsed = JSON.parse(clean)
-      return res.status(200).json({
-        port,
-        country: country || parsed.port_info?.country || null,
-        vessels: parsed.vessels || [],
-        port_info: parsed.port_info || null,
-        source: 'AI estimate — based on typical port traffic',
+      // Get vessels with ETA to this port in next 7 days
+      const now = new Date()
+      const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+      const url = `https://api.vesselapi.com/v1/portevents?` + new URLSearchParams({
+        'filter.portUnlocode': locode,
+        'filter.eventType': 'Arrival',
+        'filter.time.from': now.toISOString(),
+        'filter.time.to': in7days.toISOString(),
+        'limit': '20',
       })
-    } catch {
-      // Try extracting JSON object
-      const match = clean.match(/\{[\s\S]*\}/)
-      if (match) {
-        const parsed = JSON.parse(match[0])
-        return res.status(200).json({
-          port,
-          vessels: parsed.vessels || [],
-          port_info: parsed.port_info || null,
-          source: 'AI estimate — based on typical port traffic',
-        })
+      const r = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + vesselKey },
+        signal: AbortSignal.timeout(8000),
+      })
+      if (r.ok) {
+        const data = await r.json()
+        const events = data.portEvents || data.data || []
+        if (events.length > 0) {
+          const vessels = events.map(e => ({
+            name:        e.vessel?.name || e.vesselName || '—',
+            imo:         e.vessel?.imo  || e.imo  || null,
+            mmsi:        e.vessel?.mmsi || e.mmsi || null,
+            flag:        e.vessel?.flag || null,
+            vessel_type: e.vessel?.type || null,
+            eta:         e.eta || e.time || null,
+            status:      'Expected',
+            source:      'AIS',
+          }))
+          return res.status(200).json({ port, locode, vessels, source: 'VesselAPI (live AIS)' })
+        }
       }
-      return res.status(200).json({ port, vessels: [], source: 'Parse error', error: 'Could not parse AI response' })
-    }
-  } catch (err) {
-    console.error('Port lineup error:', err)
-    return res.status(500).json({ error: err.message })
+    } catch(e) { console.log('VesselAPI port events failed:', e.message) }
   }
+
+  // Also try vessels currently in port
+  if (vesselKey && locode) {
+    try {
+      const url = `https://api.vesselapi.com/v1/portevents?` + new URLSearchParams({
+        'filter.portUnlocode': locode,
+        'filter.eventType': 'Arrival',
+        'limit': '20',
+      })
+      const r = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + vesselKey },
+        signal: AbortSignal.timeout(8000),
+      })
+      if (r.ok) {
+        const data = await r.json()
+        const events = (data.portEvents || data.data || []).slice(0, 20)
+        if (events.length > 0) {
+          const vessels = events.map(e => ({
+            name:        e.vessel?.name || e.vesselName || '—',
+            imo:         e.vessel?.imo  || e.imo  || null,
+            mmsi:        e.vessel?.mmsi || e.mmsi || null,
+            flag:        e.vessel?.flag || null,
+            vessel_type: e.vessel?.type || null,
+            eta:         e.eta || e.time || null,
+            status:      'At Anchorage',
+            source:      'AIS',
+          }))
+          return res.status(200).json({ port, locode, vessels, source: 'VesselAPI (live AIS)' })
+        }
+      }
+    } catch(e) { console.log('VesselAPI current vessels failed:', e.message) }
+  }
+
+  // ── 2. DeepSeek fallback ──
+  if (deepseekKey) {
+    try {
+      const r = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + deepseekKey },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          max_tokens: 1500,
+          search_enabled: true,
+          messages: [
+            { role: 'system', content: 'Return ONLY valid JSON, no markdown. Schema: {"vessels":[{"name":"","imo":"","flag":"","vessel_type":"","eta":"","cargo":"","status":"Expected"}]}' },
+            { role: 'user', content: `List 10-15 vessels currently expected or alongside at ${port}${country ? ', ' + country : ''}. Use web search for current data. Return JSON only.` }
+          ]
+        })
+      })
+      if (r.ok) {
+        const data = await r.json()
+        const text = data.choices?.[0]?.message?.content ?? '{}'
+        const clean = text.replace(/```json\s*/i,'').replace(/```\s*/i,'').replace(/```\s*$/i,'').trim()
+        try {
+          const parsed = JSON.parse(clean)
+          return res.status(200).json({ port, vessels: parsed.vessels || [], source: 'AI estimate (DeepSeek) — not real-time' })
+        } catch {
+          const match = text.match(/\{[\s\S]*\}/)
+          if (match) {
+            const parsed = JSON.parse(match[0])
+            return res.status(200).json({ port, vessels: parsed.vessels || [], source: 'AI estimate (DeepSeek) — not real-time' })
+          }
+        }
+      }
+    } catch(e) { console.log('DeepSeek failed:', e.message) }
+  }
+
+  return res.status(200).json({ port, vessels: [], source: 'No data available', error: 'All sources failed' })
 }
