@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useActiveVessels, useOperations } from '../hooks/useOperations'
 import { useTasks, DEFAULT_TASKS, CATEGORY_LABELS } from '../hooks/useTasks'
 import { VesselStatusBadge, EntryStatusBadge, OpTypeBadge } from '../components/Layout'
@@ -56,8 +57,7 @@ function DashboardKPIs() {
         active:  (res.data ?? []).filter(o => !['Sailed','Completed'].includes(o.vessel_status)).length,
         revenue: (res.data ?? []).reduce((s, o) => s + (o.net ?? 0), 0),
       })
-      setCurr(summarise(thisRes))
-      setPrev(summarise(lastRes))
+      setCurr(summarise(thisRes)); setPrev(summarise(lastRes))
     }
     load()
   }, [])
@@ -79,8 +79,7 @@ function DuplicateButton({ op, onDone }) {
     setLoading(true)
     const { id, created_at, updated_at, ref, ...rest } = op
     await supabase.from('operations').insert([{ ...rest, vessel_name: rest.vessel_name + ' (Copy)', vessel_status: 'Alongside', eta: null, etb: null, etd: null }])
-    setLoading(false)
-    onDone()
+    setLoading(false); onDone()
   }
   return (
     <button onClick={handle} disabled={loading} className="btn-secondary btn-sm" style={{ flex: 1, fontSize: '0.75rem' }} title="Duplicate">
@@ -99,9 +98,7 @@ function TaskPanel({ operation, onClose }) {
     if (!newTask.trim()) return
     setAdding(true); await addTask(newTask.trim()); setNewTask(''); setAdding(false)
   }
-  const grouped = tasks.reduce((acc, t) => {
-    const cat = t.category || 'custom'; if (!acc[cat]) acc[cat] = []; acc[cat].push(t); return acc
-  }, {})
+  const grouped = tasks.reduce((acc, t) => { const cat = t.category||'custom'; if(!acc[cat]) acc[cat]=[]; acc[cat].push(t); return acc }, {})
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
@@ -128,7 +125,7 @@ function TaskPanel({ operation, onClose }) {
               <div style={{ textAlign: 'center', padding: '32px 0' }}>
                 <div style={{ fontSize: '2rem', marginBottom: 10 }}>📋</div>
                 <div style={{ fontWeight: 600, marginBottom: 6 }}>No tasks yet</div>
-                <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 20 }}>{hasDefaults ? 'Load default tasks for "' + operation.vessel_status + '" or add your own.' : 'Add tasks below.'}</div>
+                <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: 20 }}>{hasDefaults ? 'Load default tasks for "'+operation.vessel_status+'" or add your own.' : 'Add tasks below.'}</div>
                 {hasDefaults && <button onClick={() => initTasks(operation.vessel_status)} className="btn-primary btn-sm">Load default tasks for {operation.vessel_status}</button>}
               </div>
             )}
@@ -143,19 +140,19 @@ function TaskPanel({ operation, onClose }) {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {catTasks.map(t => (
-                      <div key={t.id} style={{ padding: '10px 12px', borderRadius: 8, background: t.done ? 'var(--green-bg)' : 'var(--bg)', border: '1px solid '+(t.done ? 'rgba(26,94,56,0.2)' : 'var(--border)'), transition: 'all 0.15s' }}>
+                      <div key={t.id} style={{ padding: '10px 12px', borderRadius: 8, background: t.done ? 'var(--green-bg)' : 'var(--bg)', border: '1px solid '+(t.done?'rgba(26,94,56,0.2)':'var(--border)'), transition: 'all 0.15s' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                           <input type="checkbox" checked={!!t.done} onChange={e => toggleTask(t.id, e.target.checked)} style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--green)', flexShrink: 0, cursor: 'pointer' }} />
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 500, textDecoration: t.done ? 'line-through' : 'none', color: t.done ? 'var(--muted)' : 'var(--text)' }}>{t.task}</div>
-                            {t.done_at && <div style={{ fontSize: '0.7rem', color: 'var(--green)', marginTop: 2 }}>✓ {new Date(t.done_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
+                            <div style={{ fontSize: '0.88rem', fontWeight: 500, textDecoration: t.done?'line-through':'none', color: t.done?'var(--muted)':'var(--text)' }}>{t.task}</div>
+                            {t.done_at && <div style={{ fontSize: '0.7rem', color: 'var(--green)', marginTop: 2 }}>✓ {new Date(t.done_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>}
                           </div>
                           <button onClick={() => deleteTask(t.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 2px', opacity: 0.5 }}>🗑</button>
                         </div>
                         <div style={{ display: 'flex', gap: 10, marginTop: 8, alignItems: 'center', paddingLeft: 26 }}>
-                          <input type="datetime-local" value={t.task_time ? new Date(t.task_time).toISOString().slice(0,16) : ''} onChange={e => updateTaskTime(t.id, e.target.value ? new Date(e.target.value).toISOString() : null)} style={{ fontSize: '0.72rem', padding: '3px 6px', flex: 1, fontFamily: 'var(--mono)' }} />
+                          <input type="datetime-local" value={t.task_time?new Date(t.task_time).toISOString().slice(0,16):''} onChange={e=>updateTaskTime(t.id,e.target.value?new Date(e.target.value).toISOString():null)} style={{ fontSize: '0.72rem', padding: '3px 6px', flex: 1, fontFamily: 'var(--mono)' }} />
                           <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                            <input type="checkbox" checked={!!t.resets_daily} onChange={e => updateResetsDaily(t.id, e.target.checked)} style={{ accentColor: 'var(--blue)', cursor: 'pointer' }} />
+                            <input type="checkbox" checked={!!t.resets_daily} onChange={e=>updateResetsDaily(t.id,e.target.checked)} style={{ accentColor: 'var(--blue)', cursor: 'pointer' }} />
                             Daily reset
                           </label>
                         </div>
@@ -169,8 +166,8 @@ function TaskPanel({ operation, onClose }) {
         </div>
         <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: tasks.length > 0 ? 12 : 0 }}>
-            <input value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a custom task…" onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleAdd()} style={{ flex: 1 }} />
-            <button onClick={handleAdd} disabled={adding || !newTask.trim()} className="btn-primary btn-sm">{adding ? '…' : 'Add'}</button>
+            <input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Add a custom task…" onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&handleAdd()} style={{ flex: 1 }} />
+            <button onClick={handleAdd} disabled={adding||!newTask.trim()} className="btn-primary btn-sm">{adding?'…':'Add'}</button>
           </div>
           {tasks.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -179,8 +176,8 @@ function TaskPanel({ operation, onClose }) {
               ) : (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--red)' }}>Clear all?</span>
-                  <button onClick={async () => { await clearAll(); setConfirming(false) }} style={{ background: 'var(--red)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '0.78rem', cursor: 'pointer' }}>Yes</button>
-                  <button onClick={() => setConfirming(false)} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={async()=>{await clearAll();setConfirming(false)}} style={{ background: 'var(--red)', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: '0.78rem', cursor: 'pointer' }}>Yes</button>
+                  <button onClick={()=>setConfirming(false)} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
                 </div>
               )}
               <button onClick={onClose} className="btn-secondary btn-sm">Close</button>
@@ -205,7 +202,7 @@ function ETABadge({ label, dateStr }) {
   const color = isOverdue ? 'var(--red)'     : isToday ? 'var(--amber)'    : isSoon ? '#854F0B' : 'var(--navy)'
   const countdown = isOverdue ? Math.abs(days)+'d overdue' : isToday ? 'Today' : 'in '+days+'d'
   return (
-    <div style={{ background: bg, borderRadius: 6, padding: '5px 10px', fontSize: '0.78rem', border: isOverdue ? '1px solid var(--red)' : 'none' }}>
+    <div style={{ background: bg, borderRadius: 6, padding: '5px 10px', fontSize: '0.78rem', border: isOverdue?'1px solid var(--red)':'none' }}>
       <span style={{ color: 'var(--muted)', fontSize: '0.7rem', display: 'block' }}>{label}</span>
       <span style={{ fontWeight: 700, color }}>{formatDate(dateStr)}</span>
       <span style={{ fontSize: '0.68rem', color, marginLeft: 4, fontWeight: 600 }}>({countdown})</span>
@@ -217,14 +214,18 @@ function KanbanCard({ op, onEdit, onTasks, onTrack, onDuplicated, color }) {
   const etdDays = daysUntil(op.etd)
   const isOverdue = op.etd && etdDays < 0 && op.vessel_status !== 'Sailed'
   return (
-    <div className="card" style={{ marginBottom: 10, padding: '14px 16px', borderTop: '3px solid '+(isOverdue ? 'var(--red)' : color) }}>
+    <div className="card" style={{ marginBottom: 10, padding: '14px 16px', borderTop: '3px solid '+(isOverdue?'var(--red)':color) }}>
       {isOverdue && <div style={{ background: 'var(--red-bg)', color: 'var(--red)', fontSize: '0.75rem', fontWeight: 700, padding: '5px 10px', borderRadius: 6, marginBottom: 10 }}>⚠️ ETD overdue by {Math.abs(etdDays)} day{Math.abs(etdDays)!==1?'s':''}</div>}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
             <OpTypeBadge code={op.op_type} /><EntryStatusBadge status={op.entry_status} />
           </div>
-          <div style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.3 }}>{op.vessel_name || '—'}</div>
+          <Link to={'/vessels/' + encodeURIComponent(op.vessel_name)} style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.3, color: 'var(--text)', textDecoration: 'none' }}
+            onMouseEnter={e => e.currentTarget.style.color='var(--blue)'}
+            onMouseLeave={e => e.currentTarget.style.color='var(--text)'}>
+            {op.vessel_name || '—'}
+          </Link>
         </div>
         <span style={{ fontFamily: 'var(--mono)', fontSize: '0.68rem', color: 'var(--muted)', whiteSpace: 'nowrap', marginLeft: 8 }}>{op.ref}</span>
       </div>
@@ -271,7 +272,10 @@ export default function Operational() {
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           {['All', 'Nicolai Baden', 'Romeo Baden'].map(op => (
-            <button key={op} onClick={() => setActiveFilter(op === 'All' ? null : op)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', background: activeFilter === (op === 'All' ? null : op) ? 'var(--navy)' : 'var(--surface)', color: activeFilter === (op === 'All' ? null : op) ? '#fff' : 'var(--muted)', border: '1px solid var(--border)' }}>{op}</button>
+            <button key={op} onClick={() => setActiveFilter(op === 'All' ? null : op)}
+              style={{ padding: '6px 14px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', background: activeFilter===(op==='All'?null:op)?'var(--navy)':'var(--surface)', color: activeFilter===(op==='All'?null:op)?'#fff':'var(--muted)', border: '1px solid var(--border)' }}>
+              {op}
+            </button>
           ))}
         </div>
         {loadingActive ? <div className="spinner" /> : active.length === 0 ? (
@@ -303,19 +307,19 @@ export default function Operational() {
         <h2 style={{ marginBottom: 12 }}>All Operations</h2>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
           <input placeholder="Search vessel, port, client, ref…" value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
-          <select value={filters.year || ''} onChange={e => setFilter('year', e.target.value ? Number(e.target.value) : undefined)} style={{ width: 'auto' }}>
-            <option value="">All years</option>{YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+          <select value={filters.year||''} onChange={e=>setFilter('year',e.target.value?Number(e.target.value):undefined)} style={{ width: 'auto' }}>
+            <option value="">All years</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}
           </select>
-          <select value={filters.op_type || ''} onChange={e => setFilter('op_type', e.target.value)} style={{ width: 'auto' }}>
-            <option value="">All types</option>{OP_TYPES.map(t => <option key={t.code} value={t.code}>{t.code}</option>)}
+          <select value={filters.op_type||''} onChange={e=>setFilter('op_type',e.target.value)} style={{ width: 'auto' }}>
+            <option value="">All types</option>{OP_TYPES.map(t=><option key={t.code} value={t.code}>{t.code}</option>)}
           </select>
-          <select value={filters.vessel_status || ''} onChange={e => setFilter('vessel_status', e.target.value)} style={{ width: 'auto' }}>
-            <option value="">All vessel statuses</option>{VESSEL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          <select value={filters.vessel_status||''} onChange={e=>setFilter('vessel_status',e.target.value)} style={{ width: 'auto' }}>
+            <option value="">All vessel statuses</option>{VESSEL_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
-          <select value={filters.entry_status || ''} onChange={e => setFilter('entry_status', e.target.value)} style={{ width: 'auto' }}>
-            <option value="">All entry statuses</option>{ENTRY_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          <select value={filters.entry_status||''} onChange={e=>setFilter('entry_status',e.target.value)} style={{ width: 'auto' }}>
+            <option value="">All entry statuses</option>{ENTRY_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
-          <select value={filters.operator || ''} onChange={e => setFilter('operator', e.target.value)} style={{ width: 'auto' }}>
+          <select value={filters.operator||''} onChange={e=>setFilter('operator',e.target.value)} style={{ width: 'auto' }}>
             <option value="">All operators</option>
             <option value="Nicolai Baden">Nicolai Baden</option>
             <option value="Romeo Baden">Romeo Baden</option>
@@ -332,15 +336,20 @@ export default function Operational() {
                 <tr key={op.id} style={{ cursor: 'pointer' }} onClick={() => setEditOp(op)}>
                   <td><span className="ref">{op.ref}</span></td>
                   <td><OpTypeBadge code={op.op_type} /></td>
-                  <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{op.vessel_name || '—'}</td>
-                  <td style={{ color: 'var(--muted)' }}>{op.port || '—'}</td>
-                  <td style={{ color: 'var(--muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.client_name || '—'}</td>
+                  <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
+                    <Link to={'/vessels/'+encodeURIComponent(op.vessel_name)} onClick={e=>e.stopPropagation()} style={{ color: 'var(--text)', textDecoration: 'none' }}
+                      onMouseEnter={e=>e.currentTarget.style.color='var(--blue)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text)'}>
+                      {op.vessel_name||'—'}
+                    </Link>
+                  </td>
+                  <td style={{ color: 'var(--muted)' }}>{op.port||'—'}</td>
+                  <td style={{ color: 'var(--muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.client_name||'—'}</td>
                   <td style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }}>{formatDate(op.op_date)}</td>
                   <td><VesselStatusBadge status={op.vessel_status} /></td>
                   <td><EntryStatusBadge status={op.entry_status} /></td>
-                  <td style={{ color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{op.operator || '—'}</td>
-                  <td style={{ whiteSpace: 'nowrap', fontWeight: 600, color: op.net >= 0 ? 'var(--green)' : 'var(--red)' }}>{op.net != null ? formatMoney(op.net, op.inv_currency) : '—'}</td>
-                  <td onClick={e => { e.stopPropagation(); setTrackOp(op) }}><button className="btn-secondary btn-sm">🚢</button></td>
+                  <td style={{ color: 'var(--muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{op.operator||'—'}</td>
+                  <td style={{ whiteSpace: 'nowrap', fontWeight: 600, color: op.net>=0?'var(--green)':'var(--red)' }}>{op.net!=null?formatMoney(op.net,op.inv_currency):'—'}</td>
+                  <td onClick={e=>{e.stopPropagation();setTrackOp(op)}}><button className="btn-secondary btn-sm">🚢</button></td>
                 </tr>
               ))}
             </tbody>
