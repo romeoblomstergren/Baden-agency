@@ -37,7 +37,7 @@ export default function NewEntry() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleVesselSelect = ({ name, imo, mmsi, call_sign, flag, vessel_type, gt, dwt, loa, beam, year_built }) => {
+  const handleVesselSelect = async ({ name, imo, mmsi, call_sign, flag, vessel_type, gt, dwt, loa, beam, year_built }) => {
     setForm(f => ({
       ...f,
       vessel_name:  name        || f.vessel_name,
@@ -52,6 +52,16 @@ export default function NewEntry() {
       beam:         beam        || f.beam,
       year_built:   year_built  || f.year_built,
     }))
+    // Auto-save to vessels DB so we never re-fetch the same vessel
+    if (imo) {
+      const { supabase } = await import('../lib/supabase')
+      await supabase.from('vessels').upsert({
+        name: name || '', imo, mmsi: mmsi||null, call_sign: call_sign||null,
+        flag: flag||null, vessel_type: vessel_type||null,
+        gt: gt||null, dwt: dwt||null, loa: loa||null,
+        beam: beam||null, year_built: year_built||null,
+      }, { onConflict: 'imo', ignoreDuplicates: false })
+    }
   }
 
   const submit = async (e) => {
