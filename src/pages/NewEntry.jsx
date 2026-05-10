@@ -52,6 +52,7 @@ export default function NewEntry() {
       beam:         beam        || f.beam,
       year_built:   year_built  || f.year_built,
     }))
+  }))
   }
 
   const submit = async (e) => {
