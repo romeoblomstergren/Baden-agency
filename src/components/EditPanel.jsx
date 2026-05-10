@@ -118,10 +118,26 @@ export default function EditPanel({ operation, onClose, onSaved }) {
   const save = async () => {
     setSaving(true); setError('')
     try {
-      const { id, created_at, updated_at, created_by, updated_by, net, ...rest } = form
-      await updateOperation(operation.id, rest)
+      // Only send known DB columns — strip computed/UI fields
+      const ALLOWED = new Set([
+        'op_type','year','vessel_name','port','sub_agent','client_name','op_date',
+        'imo','mmsi','eta','etb','etc','etd','eta_ampm','etb_ampm','etc_ampm','etd_ampm',
+        'inv_out','inv_in','inv_currency','income_local','income_eur',
+        'add_services','add_services_info','add_inv_out','add_inv_in',
+        'entry_status','vessel_status','notes','operator',
+        'commodity','quantity','commodity_2','quantity_2','cargo_terms',
+        'vessel_type','call_sign','flag','gt','dwt','loa','beam','year_built',
+      ])
+      const payload = Object.fromEntries(
+        Object.entries(form).filter(([k]) => ALLOWED.has(k))
+      )
+      console.log('Saving payload:', payload)
+      await updateOperation(operation.id, payload)
       onSaved(); onClose()
-    } catch(e) { setError(e.message) }
+    } catch(e) {
+      console.error('Save error:', e)
+      setError(e.message)
+    }
     finally { setSaving(false) }
   }
 
