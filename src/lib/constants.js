@@ -15,7 +15,7 @@ export const OP_COLORS = {
   MAR: '#1A4A6B', ENQ: '#7F3F3F',
 }
 
-export const VESSEL_STATUSES = ['Underway', 'In Port', 'Alongside', 'Sailed']
+export const VESSEL_STATUSES = ['Underway', 'At Anchorage', 'Alongside', 'Sailed']
 export const ENTRY_STATUSES  = ['Open', 'Closed', 'Pending', 'Disputed', 'Partial', 'Cancelled']
 export const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 export const CURRENT_YEAR = new Date().getFullYear()
