@@ -14,7 +14,7 @@ import { formatDate, formatMoney, VESSEL_STATUSES, ENTRY_STATUSES, OP_TYPES, CUR
 const YEARS = Array.from({ length: 7 }, (_, i) => CURRENT_YEAR - i)
 const KANBAN_COLUMNS = [
   { status: 'Alongside', color: 'var(--amber)', bg: 'var(--amber-bg)', dot: '🟡' },
-  { status: 'In Port',   color: 'var(--blue)',  bg: 'var(--blue-bg)',  dot: '🔵' },
+  { status: 'At Anchorage',   color: 'var(--blue)',  bg: 'var(--blue-bg)',  dot: '🔵' },
   { status: 'Underway',  color: 'var(--green)', bg: 'var(--green-bg)', dot: '🟢' },
 ]
 
