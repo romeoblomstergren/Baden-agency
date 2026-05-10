@@ -2,11 +2,11 @@ export function VesselStatusBadge({ status }) {
   if (!status) return <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
   const cls = {
     'Underway':  'badge badge-underway',
-    'In Port':   'badge badge-in-port',
+    'At Anchorage':   'badge badge-in-port',
     'Alongside': 'badge badge-alongside',
     'Sailed':    'badge badge-sailed',
   }[status] || 'badge badge-sailed'
-  const dot = { 'Underway':'🟢', 'In Port':'🔵', 'Alongside':'🟡', 'Sailed':'⚫' }[status] || ''
+  const dot = { 'Underway':'🟢', 'At Anchorage':'🔵', 'Alongside':'🟡', 'Sailed':'⚫' }[status] || ''
   return <span className={cls}><span style={{ fontSize: '0.6rem' }}>{dot}</span>{status}</span>
 }
 
