@@ -103,7 +103,7 @@ export default function EditPanel({ operation, onClose, onSaved }) {
   const [showAIEmail, setShowAIEmail] = useState(false)
   const { logs, addLog } = useOperationLogs(operation?.id)
 
-  useState(() => { if (operation) setForm({...operation}) }, [operation])
+  useEffect(() => { if (operation) setForm({...operation}) }, [operation?.id])
 
   if (!operation) return null
   const set = (k,v) => setForm(f=>({...f,[k]:v}))
