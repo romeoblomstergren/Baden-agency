@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAIContext } from '../context/AIContext'
 import { Link } from 'react-router-dom'
 import { useActiveVessels, useOperations } from '../hooks/useOperations'
 import { useTasks, DEFAULT_TASKS, CATEGORY_LABELS } from '../hooks/useTasks'
@@ -7,7 +8,6 @@ import EditPanel from '../components/EditPanel'
 import TrackingModal from '../components/TrackingModal'
 import Alerts from '../components/Alerts'
 import LiveMap from '../components/LiveMap'
-import AIAssistant from '../components/AIAssistant'
 import { supabase } from '../lib/supabase'
 import { formatDate, formatMoney, VESSEL_STATUSES, ENTRY_STATUSES, OP_TYPES, CURRENT_YEAR } from '../lib/constants'
 
@@ -256,6 +256,8 @@ function KanbanCard({ op, onEdit, onTasks, onTrack, onDuplicated, color }) {
 
 export default function Operational() {
   const { data: active, loading: loadingActive, refetch: refetchActive } = useActiveVessels()
+  const { setContext } = useAIContext()
+  useEffect(() => { setContext({ operations: active }) }, [active])
   const [filters, setFilters] = useState({ year: CURRENT_YEAR })
   const [search, setSearch]   = useState('')
   const { data: allOps, loading: loadingAll, refetch: refetchAll } = useOperations({ ...filters, ...(search ? { search } : {}) })
@@ -366,7 +368,6 @@ export default function Operational() {
       {editOp  && <EditPanel operation={editOp} onClose={() => setEditOp(null)} onSaved={onSaved} />}
       {taskOp  && <TaskPanel operation={taskOp} onClose={() => setTaskOp(null)} />}
       {trackOp && <TrackingModal operation={trackOp} onClose={() => setTrackOp(null)} />}
-      <AIAssistant operations={active} />
     </div>
   )
 }
