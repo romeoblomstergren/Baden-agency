@@ -38,19 +38,20 @@ export default function NewEntry() {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const handleVesselSelect = async ({ name, imo, mmsi, call_sign, flag, vessel_type, gt, dwt, loa, beam, year_built }) => {
+    const val = x => (x !== undefined && x !== null && x !== '') ? x : null
     setForm(f => ({
       ...f,
-      vessel_name:  name        || f.vessel_name,
-      imo:          imo         || f.imo,
-      mmsi:         mmsi        || f.mmsi,
-      call_sign:    call_sign   || f.call_sign,
-      flag:         flag        || f.flag,
-      vessel_type:  vessel_type || f.vessel_type,
-      gt:           gt          || f.gt,
-      dwt:          dwt         || f.dwt,
-      loa:          loa         || f.loa,
-      beam:         beam        || f.beam,
-      year_built:   year_built  || f.year_built,
+      vessel_name:  val(name)        ?? f.vessel_name,
+      imo:          val(imo)         ?? f.imo,
+      mmsi:         val(mmsi)        ?? f.mmsi,
+      call_sign:    val(call_sign)   ?? f.call_sign,
+      flag:         val(flag)        ?? f.flag,
+      vessel_type:  val(vessel_type) ?? f.vessel_type,
+      gt:           val(gt)          ?? f.gt,
+      dwt:          val(dwt)         ?? f.dwt,
+      loa:          val(loa)         ?? f.loa,
+      beam:         val(beam)        ?? f.beam,
+      year_built:   val(year_built)  ?? f.year_built,
     }))
     // Auto-save to vessels DB so we never re-fetch the same vessel
     if (imo) {
