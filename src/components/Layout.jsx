@@ -23,6 +23,7 @@ const NAV_FULL = [
   { to:'/vessels',       label:'Vessels'       },
   { to:'/contacts',      label:'Contacts'      },
   { to:'/daily',         label:'Daily Report'  },
+  { to:'/health',         label:'⚙ Health'       },
 ]
 
 export default function Layout({ children }) {
