@@ -44,18 +44,20 @@ function DashboardKPIs() {
   useEffect(() => {
     async function load() {
       const now = new Date()
-      // Use year+month from op_date for accurate monthly counts
       const thisYear  = now.getFullYear()
-      const thisMonth = now.getMonth() + 1  // 1-based
+      const thisMonth = now.getMonth() + 1
       const lastYear  = thisMonth === 1 ? thisYear - 1 : thisYear
       const lastMonth = thisMonth === 1 ? 12 : thisMonth - 1
+      const pad = n => String(n).padStart(2, '0')
+      const thisStart = thisYear + '-' + pad(thisMonth) + '-01'
+      const thisEnd   = thisMonth === 12 ? (thisYear+1) + '-01-01' : thisYear + '-' + pad(thisMonth+1) + '-01'
+      const lastStart = lastYear  + '-' + pad(lastMonth) + '-01'
+      const lastEnd   = lastMonth === 12 ? (lastYear+1) + '-01-01' : lastYear + '-' + pad(lastMonth === 12 ? 1 : lastMonth+1) + '-01'
       const [thisRes, lastRes] = await Promise.all([
         supabase.from('operations').select('id, vessel_status, net', { count: 'exact' })
-          .eq('year', thisYear).gte('op_date', thisYear + '-' + String(thisMonth).padStart(2,'0') + '-01')
-          .lt('op_date', thisMonth === 12 ? (thisYear+1) + '-01-01' : thisYear + '-' + String(thisMonth+1).padStart(2,'0') + '-01'),
+          .gte('op_date', thisStart).lt('op_date', thisEnd),
         supabase.from('operations').select('id, vessel_status, net', { count: 'exact' })
-          .eq('year', lastYear).gte('op_date', lastYear + '-' + String(lastMonth).padStart(2,'0') + '-01')
-          .lt('op_date', lastMonth === 12 ? (lastYear+1) + '-01-01' : lastYear + '-' + String(lastMonth === 12 ? 1 : lastMonth+1).padStart(2,'0') + '-01'),
+          .gte('op_date', lastStart).lt('op_date', lastEnd),
       ])
       const summarise = (res) => ({
         total:   res.count ?? 0,
