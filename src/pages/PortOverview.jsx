@@ -8,7 +8,7 @@ const SOURCE_COLORS = {
 const STATUS_STYLE = {
   'Expected':  { bg: '#f3f4f6', color: '#6b7280' },
   'Alongside': { bg: 'var(--amber-bg)', color: 'var(--amber)' },
-  'In Port':   { bg: 'var(--blue-bg)',  color: 'var(--blue)'  },
+  'At Anchorage':   { bg: 'var(--blue-bg)',  color: 'var(--blue)'  },
   'Underway':  { bg: 'var(--green-bg)', color: 'var(--green)' },
 }
 
