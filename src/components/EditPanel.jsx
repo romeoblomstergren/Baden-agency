@@ -93,9 +93,32 @@ Use correct maritime terminology. Be specific with vessel details provided.`
 }
 
 export default function EditPanel({ operation, onClose, onSaved }) {
-  const [form, setForm]         = useEffect(() => { if (operation) setForm({...operation}) }, [operation?.id]); setError('')
+  const [form, setForm]           = useState({})
+  const [saving, setSaving]       = useState(false)
+  const [deleting, setDeleting]   = useState(false)
+  const [error, setError]         = useState('')
+  const [confirm, setConfirm]     = useState(false)
+  const [newLog, setNewLog]       = useState('')
+  const [addingLog, setAddingLog] = useState(false)
+  const [showAIEmail, setShowAIEmail] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
+  const { logs, addLog } = useOperationLogs(operation?.id)
+
+  // ✅ Fixed: useEffect so form loads correctly every time panel opens
+  useEffect(() => {
+    if (operation) setForm({ ...operation })
+    setActiveTab(0)
+    setError('')
+    setConfirm(false)
+  }, [operation?.id])
+
+  if (!operation) return null
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const save = async () => {
+    setSaving(true); setError('')
     try {
-      const {id,created_at,updated_at,created_by,updated_by,net,_tab,...rest} = form
+      const { id, created_at, updated_at, created_by, updated_by, net, ...rest } = form
       await updateOperation(operation.id, rest)
       onSaved(); onClose()
     } catch(e) { setError(e.message) }
@@ -122,7 +145,7 @@ export default function EditPanel({ operation, onClose, onSaved }) {
     window.open('https://www.marinetraffic.com/en/ais/index/search/all/keyword:' + q, '_blank')
   }
 
-  const net = (form.inv_out||0)-(form.inv_in||0)
+  const net = (form.inv_out||0) - (form.inv_in||0)
 
   return (
     <>
@@ -135,7 +158,7 @@ export default function EditPanel({ operation, onClose, onSaved }) {
             <div style={{color:'rgba(255,255,255,0.6)',fontSize:'0.72rem',fontFamily:'var(--mono)'}}>{operation.ref}</div>
             <div style={{color:'#fff',fontWeight:600,fontSize:'0.95rem',marginTop:2}}>{operation.vessel_name||'—'}</div>
           </div>
-          <button onClick={() => setShowAIEmail(true)} style={{background:'rgba(255,255,255,0.15)',color:'#fff',border:'none',borderRadius:6,padding:'6px 10px',fontSize:'0.78rem',cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+          <button onClick={() => setShowAIEmail(true)} style={{background:'rgba(255,255,255,0.15)',color:'#fff',border:'none',borderRadius:6,padding:'6px 10px',fontSize:'0.78rem',cursor:'pointer'}}>
             ✦ Email
           </button>
           <button onClick={trackMT} style={{background:'rgba(255,255,255,0.15)',color:'#fff',border:'none',borderRadius:6,padding:'6px 10px',fontSize:'0.78rem',cursor:'pointer'}}>
@@ -145,10 +168,13 @@ export default function EditPanel({ operation, onClose, onSaved }) {
         </div>
 
         <div style={{display:'flex',borderBottom:'1px solid var(--border)',background:'var(--bg)'}}>
-          {['Details','Activity log'].map((tab,i)=>(
-            <button key={tab} onClick={()=>set('_tab',i)}
-              style={{flex:1,padding:'10px',border:'none',cursor:'pointer',fontSize:'0.85rem',fontWeight:500,background:(form._tab||0)===i?'var(--surface)':'transparent',color:(form._tab||0)===i?'var(--navy)':'var(--muted)',borderBottom:(form._tab||0)===i?'2px solid var(--navy)':'2px solid transparent'}}>
-              {tab} {tab==='Activity log'&&logs.length>0?'('+logs.length+')':''}
+          {['Details','Activity log'].map((tab,i) => (
+            <button key={tab} onClick={() => setActiveTab(i)}
+              style={{flex:1,padding:'10px',border:'none',cursor:'pointer',fontSize:'0.85rem',fontWeight:500,
+                background:activeTab===i?'var(--surface)':'transparent',
+                color:activeTab===i?'var(--navy)':'var(--muted)',
+                borderBottom:activeTab===i?'2px solid var(--navy)':'2px solid transparent'}}>
+              {tab}{tab==='Activity log'&&logs.length>0?' ('+logs.length+')':''}
             </button>
           ))}
         </div>
@@ -156,7 +182,7 @@ export default function EditPanel({ operation, onClose, onSaved }) {
         <div style={{flex:1,overflowY:'auto',padding:20}}>
           {error && <div style={{background:'var(--red-bg)',color:'var(--red)',padding:'10px 14px',borderRadius:8,fontSize:'0.85rem',marginBottom:16}}>{error}</div>}
 
-          {(form._tab||0)===0 ? (<>
+          {activeTab === 0 ? (<>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
               <div className="form-group">
                 <label className="form-label">Entry Status</label>
@@ -179,9 +205,17 @@ export default function EditPanel({ operation, onClose, onSaved }) {
                 <label className="form-label">Vessel Name</label>
                 <input value={form.vessel_name||''} onChange={e=>set('vessel_name',e.target.value)} style={{marginBottom:6}}/>
                 <VesselSearch value={''} onChange={()=>{}} onVesselSelect={({name,imo,mmsi,call_sign,flag,vessel_type,gt,dwt,loa,beam,year_built})=>{
-                  if(name) set('vessel_name',name); if(imo) set('imo',imo); if(mmsi) set('mmsi',mmsi)
-                  if(call_sign) set('call_sign',call_sign); if(flag) set('flag',flag); if(vessel_type) set('vessel_type',vessel_type)
-                  if(gt) set('gt',gt); if(dwt) set('dwt',dwt); if(loa) set('loa',loa); if(beam) set('beam',beam); if(year_built) set('year_built',year_built)
+                  if(name)        set('vessel_name',name)
+                  if(imo)         set('imo',imo)
+                  if(mmsi)        set('mmsi',mmsi)
+                  if(call_sign)   set('call_sign',call_sign)
+                  if(flag)        set('flag',flag)
+                  if(vessel_type) set('vessel_type',vessel_type)
+                  if(gt)          set('gt',gt)
+                  if(dwt)         set('dwt',dwt)
+                  if(loa)         set('loa',loa)
+                  if(beam)        set('beam',beam)
+                  if(year_built)  set('year_built',year_built)
                 }}/>
               </div>
               <div className="form-group"><label className="form-label">Date</label><input type="date" value={form.op_date||''} onChange={e=>set('op_date',e.target.value)}/></div>
@@ -215,10 +249,12 @@ export default function EditPanel({ operation, onClose, onSaved }) {
               <div className="form-group"><label className="form-label">Invoice In</label><input type="number" step="0.01" value={form.inv_in||''} onChange={e=>set('inv_in',e.target.value?Number(e.target.value):null)} placeholder="0.00"/></div>
               <div className="form-group"><label className="form-label">Income Local</label><input type="number" step="0.01" value={form.income_local||''} onChange={e=>set('income_local',e.target.value?Number(e.target.value):null)} placeholder="0.00"/></div>
               <div className="form-group"><label className="form-label">Income EUR</label><input type="number" step="0.01" value={form.income_eur||''} onChange={e=>set('income_eur',e.target.value?Number(e.target.value):null)} placeholder="0.00"/></div>
-              {(form.inv_out||form.inv_in)&&(<div style={{gridColumn:'1/-1',background:'var(--bg)',padding:'10px 14px',borderRadius:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:'0.82rem',color:'var(--muted)'}}>Net (inv out − inv in)</span>
-                <span style={{fontWeight:700,color:net>=0?'var(--green)':'var(--red)',fontSize:'0.95rem'}}>{formatMoney(net,form.inv_currency)}</span>
-              </div>)}
+              {(form.inv_out||form.inv_in) ? (
+                <div style={{gridColumn:'1/-1',background:'var(--bg)',padding:'10px 14px',borderRadius:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:'0.82rem',color:'var(--muted)'}}>Net (inv out − inv in)</span>
+                  <span style={{fontWeight:700,color:net>=0?'var(--green)':'var(--red)',fontSize:'0.95rem'}}>{formatMoney(net,form.inv_currency)}</span>
+                </div>
+              ) : null}
             </div>
 
             <div className="section-title">Cargo details</div>
@@ -265,7 +301,10 @@ export default function EditPanel({ operation, onClose, onSaved }) {
             )}
           </>) : (<>
             <div style={{display:'flex',gap:8,marginBottom:16}}>
-              <input value={newLog} onChange={e=>setNewLog(e.target.value)} placeholder="Add update (e.g. Crew change completed…)" onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&submitLog()} style={{flex:1}}/>
+              <input value={newLog} onChange={e=>setNewLog(e.target.value)}
+                placeholder="Add update (e.g. Crew change completed…)"
+                onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&submitLog()}
+                style={{flex:1}}/>
               <button onClick={submitLog} disabled={addingLog||!newLog.trim()} className="btn-primary btn-sm">{addingLog?'…':'Add'}</button>
             </div>
             {logs.length===0 ? (
@@ -284,8 +323,8 @@ export default function EditPanel({ operation, onClose, onSaved }) {
         </div>
 
         <div style={{padding:'14px 20px',borderTop:'1px solid var(--border)',display:'flex',gap:10,background:'var(--surface)'}}>
-          {(form._tab||0)===0&&<button onClick={save} disabled={saving} className="btn-primary" style={{flex:1}}>{saving?'Saving…':'✓ Save changes'}</button>}
-          <button onClick={onClose} className="btn-secondary" style={(form._tab||0)===1?{flex:1}:{}}> Close</button>
+          {activeTab===0 && <button onClick={save} disabled={saving} className="btn-primary" style={{flex:1}}>{saving?'Saving…':'✓ Save changes'}</button>}
+          <button onClick={onClose} className="btn-secondary" style={activeTab===1?{flex:1}:{}}>Close</button>
         </div>
       </div>
 
