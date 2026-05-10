@@ -4,6 +4,7 @@ import { deleteOperation } from '../hooks/useOperations'
 import { useOperationLogs } from '../hooks/usePortInfo'
 import { useAI } from '../hooks/useAI'
 import { supabase } from '../lib/supabase'
+import LivePosition from './LivePosition'
 import { VESSEL_STATUSES, ENTRY_STATUSES, formatDate, formatMoney } from '../lib/constants'
 
 const EMAIL_TYPES = [
@@ -186,6 +187,13 @@ export default function EditPanel({ operation, onClose, onSaved }) {
           <button onClick={trackMT} style={{ background:'rgba(255,255,255,0.15)', color:'#fff', border:'none', borderRadius:6, padding:'6px 10px', fontSize:'0.78rem', cursor:'pointer' }}>🚢 Track</button>
           <button onClick={onClose} style={{ background:'transparent', color:'rgba(255,255,255,0.7)', border:'none', fontSize:'1.4rem', cursor:'pointer', lineHeight:1, padding:4 }}>×</button>
         </div>
+
+        {/* Live position */}
+        {(form.mmsi || form.imo) && (
+          <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <LivePosition mmsi={form.mmsi} imo={form.imo} />
+          </div>
+        )}
 
         {/* Tabs */}
         <div style={{ display:'flex', borderBottom:'1px solid var(--border)', background:'var(--bg)' }}>
