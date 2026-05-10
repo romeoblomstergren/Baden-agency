@@ -16,6 +16,7 @@ import DailyReport from './pages/DailyReport'
 import VesselHistory from './pages/VesselHistory'
 import Contacts    from './pages/Contacts'
 import PortOverview from './pages/PortOverview'
+import Health      from './pages/Health'
 import './styles.css'
 
 function Protected({ children }) {
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/daily"    element={<Protected><DailyReport/></Protected>}/>
         <Route path="/contacts"  element={<Protected><Contacts/></Protected>}/>
         <Route path="/port-overview" element={<Protected><PortOverview/></Protected>}/>
+        <Route path="/health"       element={<Protected><Health/></Protected>}/>
         <Route path="/vessels/:vesselName" element={<Protected><VesselHistory/></Protected>}/>
         <Route path="*"         element={<Navigate to="/" replace/>}/>
       </Routes>
