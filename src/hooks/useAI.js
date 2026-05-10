@@ -3,10 +3,12 @@ import { useState } from 'react'
 export function useAI() {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
+  const [searched, setSearched] = useState(false)
 
-  async function ask(userMessage, { system, history = [], max_tokens = 1500 } = {}) {
+  async function ask(userMessage, { system, history = [], max_tokens = 2000 } = {}) {
     setLoading(true)
     setError(null)
+    setSearched(false)
     try {
       const messages = [...history, { role: 'user', content: userMessage }]
       const res = await fetch('/api/ai', {
@@ -16,6 +18,7 @@ export function useAI() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'AI request failed')
+      if (data.search) setSearched(true)
       return data.content
     } catch (err) {
       setError(err.message)
@@ -25,5 +28,5 @@ export function useAI() {
     }
   }
 
-  return { ask, loading, error }
+  return { ask, loading, error, searched }
 }
