@@ -1,4 +1,5 @@
-// api/ai.js — DeepSeek with web search enabled
+// api/ai.js
+// Uses deepseek-chat with search_enabled for native web search
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
     : messages
 
   try {
+    // Try deepseek-chat with search_enabled (native web search, no tool call markup)
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
@@ -29,75 +31,48 @@ export default async function handler(req, res) {
         model: 'deepseek-chat',
         max_tokens,
         messages: fullMessages,
-        // Enable web search so AI can look up live vessel positions,
-        // port info, weather, freight rates, maritime news etc.
-        tools: [{
-          type: 'function',
-          function: {
-            name: 'web_search',
-            description: 'Search the web for current information',
-            parameters: {
-              type: 'object',
-              properties: {
-                query: { type: 'string', description: 'Search query' }
-              },
-              required: ['query']
-            }
-          }
-        }],
-        tool_choice: 'auto',
+        search_enabled: true,
       }),
     })
 
     if (!response.ok) {
       const err = await response.json()
+      // If search_enabled not supported, fall back to plain chat
+      if (response.status === 400 || response.status === 422) {
+        const fallback = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            max_tokens,
+            messages: fullMessages,
+          }),
+        })
+        const fallbackData = await fallback.json()
+        const content = fallbackData.choices?.[0]?.message?.content ?? ''
+        return res.status(200).json({ content, search: false })
+      }
       return res.status(response.status).json({ error: err?.error?.message ?? 'DeepSeek error' })
     }
 
     const data = await response.json()
 
-    // Handle tool calls if DeepSeek wants to search
-    if (data.choices?.[0]?.finish_reason === 'tool_calls') {
-      const toolCalls = data.choices[0].message.tool_calls || []
-      const toolResults = []
+    // Clean response — strip any raw tool call markup that leaked through
+    let content = data.choices?.[0]?.message?.content ?? ''
+    content = content
+      .replace(/<｜｜DSML｜｜tool_calls>[\s\S]*?<\/｜｜DSML｜｜tool_calls>/g, '')
+      .replace(/<｜｜DSML｜｜[\s\S]*?>/g, '')
+      .replace(/<\/｜｜DSML｜｜[\s\S]*?>/g, '')
+      .trim()
 
-      for (const call of toolCalls) {
-        if (call.function.name === 'web_search') {
-          const args = JSON.parse(call.function.arguments)
-          // Use DeepSeek's built-in search via a second call with search results
-          toolResults.push({
-            role: 'tool',
-            tool_call_id: call.id,
-            content: `Searching for: ${args.query}`,
-          })
-        }
-      }
+    // Check if search was actually used
+    const searchUsed = data.choices?.[0]?.message?.search_results?.length > 0
+    const sources = data.choices?.[0]?.message?.search_results?.map(r => r.url).slice(0, 3) || []
 
-      // Make second call with tool results
-      const secondResponse = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          max_tokens,
-          messages: [
-            ...fullMessages,
-            data.choices[0].message,
-            ...toolResults,
-          ],
-        }),
-      })
-
-      const secondData = await secondResponse.json()
-      const content = secondData.choices?.[0]?.message?.content ?? ''
-      return res.status(200).json({ content })
-    }
-
-    const content = data.choices?.[0]?.message?.content ?? ''
-    return res.status(200).json({ content })
+    return res.status(200).json({ content, search: searchUsed, sources })
 
   } catch (err) {
     console.error('AI error:', err)
