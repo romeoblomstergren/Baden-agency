@@ -48,7 +48,7 @@ ACTION:CREATE_VESSEL
 
 UPDATE OPERATION FIELD:
 ACTION:UPDATE_OP
-{"id":"...","field":"vessel_status","value":"In Port"}
+{"id":"...","field":"vessel_status","value":"At Anchorage"}
 
 ADD LOG ENTRY:
 ACTION:ADD_LOG
