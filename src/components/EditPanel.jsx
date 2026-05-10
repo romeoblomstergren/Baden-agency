@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import VesselSearch from './VesselSearch'
 import { updateOperation, deleteOperation } from '../hooks/useOperations'
 import { useOperationLogs } from '../hooks/usePortInfo'
@@ -93,23 +93,7 @@ Use correct maritime terminology. Be specific with vessel details provided.`
 }
 
 export default function EditPanel({ operation, onClose, onSaved }) {
-  const [form, setForm]         = useState({})
-  const [saving, setSaving]     = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [error, setError]       = useState('')
-  const [confirm, setConfirm]   = useState(false)
-  const [newLog, setNewLog]     = useState('')
-  const [addingLog, setAddingLog] = useState(false)
-  const [showAIEmail, setShowAIEmail] = useState(false)
-  const { logs, addLog } = useOperationLogs(operation?.id)
-
-  useEffect(() => { if (operation) setForm({...operation}) }, [operation?.id])
-
-  if (!operation) return null
-  const set = (k,v) => setForm(f=>({...f,[k]:v}))
-
-  const save = async () => {
-    setSaving(true); setError('')
+  const [form, setForm]         = useEffect(() => { if (operation) setForm({...operation}) }, [operation?.id]); setError('')
     try {
       const {id,created_at,updated_at,created_by,updated_by,net,_tab,...rest} = form
       await updateOperation(operation.id, rest)
