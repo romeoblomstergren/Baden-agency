@@ -6,19 +6,21 @@ async function lookupByIMO(imo) {
     if (!res.ok) throw new Error('failed')
     return await res.json()
   } catch (e) {
-    console.error('Vessel lookup error:', e)
+    console.error('Vessel API error:', e)
     return null
   }
 }
 
-async function searchByName(q) {
-  // VesselFinder name search via allorigins proxy
+async function searchWithAI(query) {
   try {
-    const url = `https://www.vesselfinder.com/api/pub/portcalls/search?s=${encodeURIComponent(q)}`
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
-    const res = await fetch(proxy, { signal: AbortSignal.timeout(8000) })
+    const res = await fetch('/api/vessel-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    })
+    if (!res.ok) return []
     const data = await res.json()
-    return JSON.parse(data.contents || '[]').slice(0, 10)
+    return data.vessels || []
   } catch {
     return []
   }
@@ -53,35 +55,41 @@ export default function VesselSearch({ value, onChange, onVesselSelect }) {
     clearTimeout(timer.current)
 
     if (/^\d{7}$/.test(val.trim())) {
-      // IMO number — lookup via VesselAPI
+      // 7-digit IMO — use VesselAPI (accurate, authoritative)
       timer.current = setTimeout(async () => {
         setImoLoading(true)
         const vessel = await lookupByIMO(val.trim())
         if (vessel && vessel.name) {
           setImoResult(vessel)
         } else {
-          setImoError('Vessel not found for this IMO.')
+          // Fallback to DeepSeek if VesselAPI fails
+          const aiResults = await searchWithAI(val.trim())
+          if (aiResults.length > 0) {
+            setImoResult(aiResults[0])
+          } else {
+            setImoError('Vessel not found for this IMO.')
+          }
         }
         setImoLoading(false)
         setOpen(true)
       }, 500)
     } else if (val.length >= 3) {
-      // Name search via VesselFinder
+      // Name/description search — use DeepSeek AI
       timer.current = setTimeout(async () => {
         setSearching(true)
-        const data = await searchByName(val)
+        const data = await searchWithAI(val)
         setResults(data)
         setSearching(false)
         setOpen(true)
-      }, 400)
+      }, 600)
     }
     setOpen(true)
   }
 
-  const applyVessel = (mapped) => {
-    setQuery(mapped.name)
-    onChange(mapped.name)
-    onVesselSelect(mapped)
+  const applyVessel = (vessel) => {
+    setQuery(vessel.name || '')
+    onChange(vessel.name || '')
+    onVesselSelect(vessel)
     setResults([])
     setImoResult(null)
     setOpen(false)
@@ -101,7 +109,7 @@ export default function VesselSearch({ value, onChange, onVesselSelect }) {
           value={query}
           onChange={handleInput}
           onFocus={() => (results.length > 0 || imoResult) && setOpen(true)}
-          placeholder="Type vessel name or 7-digit IMO number…"
+          placeholder="Type vessel name, description, or 7-digit IMO…"
           autoComplete="off"
         />
         {isLoading && (
@@ -122,76 +130,60 @@ export default function VesselSearch({ value, onChange, onVesselSelect }) {
           boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
           zIndex: 300, maxHeight: 380, overflowY: 'auto',
         }}>
-
           {/* IMO result */}
           {imoResult && (
             <div style={{ padding: 14 }}>
-              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: 8,
-                fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Vessel found via IMO lookup
               </div>
-              <div style={{ background: 'var(--green-bg)', border: '1px solid rgba(26,94,56,0.2)',
-                borderRadius: 8, padding: '12px 14px', marginBottom: 10 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 8 }}>
-                  🚢 {imoResult.name}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px',
-                  fontSize: '0.78rem', marginBottom: 10 }}>
-                  {[['IMO', imoResult.imo], ['MMSI', imoResult.mmsi],
-                    ['Flag', imoResult.flag], ['Type', imoResult.vessel_type],
-                    ['Call Sign', imoResult.call_sign], ['GT', imoResult.gt],
-                    ['DWT', imoResult.dwt], ['LOA', imoResult.loa ? imoResult.loa + ' m' : ''],
+              <div style={{ background: 'var(--green-bg)', border: '1px solid rgba(26,94,56,0.2)', borderRadius: 8, padding: '12px 14px', marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 8 }}>🚢 {imoResult.name}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '0.78rem', marginBottom: 10 }}>
+                  {[['IMO', imoResult.imo], ['MMSI', imoResult.mmsi], ['Flag', imoResult.flag],
+                    ['Type', imoResult.vessel_type], ['Call Sign', imoResult.call_sign],
+                    ['GT', imoResult.gt], ['DWT', imoResult.dwt],
+                    ['LOA', imoResult.loa ? imoResult.loa + ' m' : ''],
                     ['Beam', imoResult.beam ? imoResult.beam + ' m' : ''],
                     ['Year built', imoResult.year_built],
                   ].filter(([, v]) => v).map(([k, v]) => (
-                    <div key={k}>
-                      <span style={{ color: 'var(--muted)' }}>{k}:</span>{' '}
-                      <strong>{v}</strong>
-                    </div>
+                    <div key={k}><span style={{ color: 'var(--muted)' }}>{k}:</span> <strong>{v}</strong></div>
                   ))}
                 </div>
-                <button type="button" onClick={() => applyVessel(imoResult)}
-                  className="btn-primary btn-sm">✓ Apply to form</button>
+                <button type="button" onClick={() => applyVessel(imoResult)} className="btn-primary btn-sm">✓ Apply to form</button>
               </div>
             </div>
           )}
 
           {/* IMO error */}
           {imoError && (
-            <div style={{ padding: '12px 14px', color: 'var(--red)', fontSize: '0.82rem' }}>
-              {imoError}
-            </div>
+            <div style={{ padding: '12px 14px', color: 'var(--red)', fontSize: '0.82rem' }}>{imoError}</div>
           )}
 
-          {/* Name search loading */}
+          {/* AI search loading */}
           {searching && (
             <div style={{ padding: '14px', fontSize: '0.82rem', color: 'var(--muted)', textAlign: 'center' }}>
-              Searching… (may take a few seconds)
+              ✦ Searching with AI…
             </div>
           )}
 
-          {/* Name results */}
+          {/* AI name results */}
           {!searching && results.length > 0 && (
             <>
-              <div style={{ padding: '8px 12px', fontSize: '0.72rem', color: 'var(--muted)',
-                borderBottom: '1px solid var(--border)' }}>
-                {results.length} vessel{results.length !== 1 ? 's' : ''} found — click to auto-fill
+              <div style={{ padding: '8px 12px', fontSize: '0.72rem', color: 'var(--muted)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>✦</span>
+                <span>{results.length} vessel{results.length !== 1 ? 's' : ''} found via AI — click to apply</span>
               </div>
               {results.map((v, i) => (
-                <div key={i} onClick={() => applyVessel({
-                  name: v.name, imo: String(v.imo || ''), mmsi: String(v.mmsi || ''),
-                  call_sign: v.callsign || '', flag: v.flag || '',
-                  vessel_type: v.type || '', gt: '', dwt: '', loa: '', beam: '', year_built: '',
-                })}
-                  style={{ padding: '10px 14px', cursor: 'pointer',
-                    borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                <div key={i} onClick={() => applyVessel(v)}
+                  style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>🚢 {v.name}</div>
                   <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: 2, fontFamily: 'var(--mono)' }}>
                     IMO: {v.imo || '—'} · MMSI: {v.mmsi || '—'}
                     {v.flag ? ` · ${v.flag}` : ''}
-                    {v.type ? ` · ${v.type}` : ''}
+                    {v.vessel_type ? ` · ${v.vessel_type}` : ''}
+                    {v.dwt ? ` · ${v.dwt} DWT` : ''}
                   </div>
                 </div>
               ))}
@@ -207,14 +199,12 @@ export default function VesselSearch({ value, onChange, onVesselSelect }) {
               <input value={manualImo} onChange={e => setManualImo(e.target.value)}
                 placeholder="IMO number (optional)"
                 style={{ marginBottom: 8, fontFamily: 'var(--mono)' }} />
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={applyManual} className="btn-primary btn-sm">
                   ✓ Use "{query.slice(0, 22)}{query.length > 22 ? '…' : ''}"
                   {manualImo ? ` · IMO ${manualImo}` : ''}
                 </button>
-                <button type="button" onClick={() => setOpen(false)} className="btn-secondary btn-sm">
-                  Close
-                </button>
+                <button type="button" onClick={() => setOpen(false)} className="btn-secondary btn-sm">Close</button>
               </div>
             </div>
           )}
