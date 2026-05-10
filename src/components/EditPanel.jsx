@@ -225,18 +225,26 @@ export default function EditPanel({ operation, onClose, onSaved }) {
               <div className="form-group" style={{ gridColumn:'1/-1' }}>
                 <label className="form-label">Vessel Name</label>
                 <input value={form.vessel_name||''} onChange={e=>set('vessel_name',e.target.value)} style={{ marginBottom:6 }}/>
-                <VesselSearch value="" onChange={()=>{}} onVesselSelect={v => {
-                  if(v.name)        set('vessel_name', v.name)
-                  if(v.imo)         set('imo', v.imo)
-                  if(v.mmsi)        set('mmsi', v.mmsi)
-                  if(v.call_sign)   set('call_sign', v.call_sign)
-                  if(v.flag)        set('flag', v.flag)
-                  if(v.vessel_type) set('vessel_type', v.vessel_type)
-                  if(v.gt)          set('gt', v.gt)
-                  if(v.dwt)         set('dwt', v.dwt)
-                  if(v.loa)         set('loa', v.loa)
-                  if(v.beam)        set('beam', v.beam)
-                  if(v.year_built)  set('year_built', v.year_built)
+                <VesselSearch value="" onChange={()=>{}} onVesselSelect={async v => {
+                  const fields = {}
+                  if(v.name)        fields.vessel_name = v.name
+                  if(v.imo)         fields.imo         = v.imo
+                  if(v.mmsi)        fields.mmsi        = v.mmsi
+                  if(v.call_sign)   fields.call_sign   = v.call_sign
+                  if(v.flag)        fields.flag        = v.flag
+                  if(v.vessel_type) fields.vessel_type = v.vessel_type
+                  if(v.gt)          fields.gt          = v.gt
+                  if(v.dwt)         fields.dwt         = v.dwt
+                  if(v.loa)         fields.loa         = v.loa
+                  if(v.beam)        fields.beam        = v.beam
+                  if(v.year_built)  fields.year_built  = v.year_built
+                  // Update local state
+                  setForm(f => ({ ...f, ...fields }))
+                  // Also save immediately to DB so it's not lost
+                  if (Object.keys(fields).length > 0) {
+                    await supabase.from('operations').update(fields).eq('id', operation.id)
+                    onSaved()
+                  }
                 }}/>
               </div>
               <div className="form-group"><label className="form-label">Date</label><input type="date" value={form.op_date||''} onChange={e=>set('op_date',e.target.value)}/></div>
