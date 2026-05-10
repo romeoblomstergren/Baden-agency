@@ -1,4 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import GlobalAI from './GlobalAI'
+import { useAIContext } from '../context/AIContext'
 import { useAuth } from '../hooks/useAuth'
 
 const NAV = [
@@ -67,6 +69,7 @@ export default function Layout({ children }) {
       </header>
 
       <main style={{flex:1}}>{children}</main>
+      <GlobalAI />
 
       {/* Mobile bottom tabs */}
       <nav style={{
