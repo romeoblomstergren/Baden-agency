@@ -20,8 +20,10 @@ const NAV_FULL = [
   { to:'/soa',       label:'SOA'        },
   { to:'/templates', label:'Templates'  },
   { to:'/vessels',   label:'Vessels'    },
+  { to:'/daily',     label:'Daily Report'},
   { to:'/templates', label:'Templates'  },
   { to:'/vessels',   label:'Vessels'    },
+  { to:'/daily',     label:'Daily Report'},
 ]
 
 export default function Layout({ children }) {

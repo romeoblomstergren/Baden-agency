@@ -246,6 +246,14 @@ export default function EditPanel({ operation, onClose, onSaved }) {
                   <input value={form.quantity||''} onChange={e=>set('quantity',e.target.value)} placeholder="23,998 MTS."/>
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Commodity 2</label>
+                  <input value={form.commodity_2||''} onChange={e=>set('commodity_2',e.target.value)} placeholder="Second grade…"/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Quantity 2</label>
+                  <input value={form.quantity_2||''} onChange={e=>set('quantity_2',e.target.value)} placeholder="5,000 MTS."/>
+                </div>
+                <div className="form-group">
                   <label className="form-label">Terms</label>
                   <input value={form.cargo_terms||''} onChange={e=>set('cargo_terms',e.target.value)} placeholder="FREE OUT…"/>
                 </div>

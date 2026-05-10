@@ -12,7 +12,7 @@ const BLANK = {
   inv_out:'', inv_in:'', inv_currency:'EUR',
   income_local:'', income_eur:'',
   add_services:false, entry_status:'Open', vessel_status:'', notes:'', operator:'Nicolai Baden',
-  commodity:'', quantity:'', cargo_terms:'', vessel_type:'', call_sign:'', flag:'', gt:'', dwt:'', loa:'', beam:'', year_built:'',
+  commodity:'', quantity:'', commodity_2:'', quantity_2:'', cargo_terms:'', vessel_type:'', call_sign:'', flag:'', gt:'', dwt:'', loa:'', beam:'', year_built:'',
 }
 
 export default function NewEntry() {
@@ -78,6 +78,8 @@ export default function NewEntry() {
         operator:     form.operator     || null,
         commodity:    form.commodity    || null,
         quantity:     form.quantity     || null,
+        commodity_2:  form.commodity_2  || null,
+        quantity_2:   form.quantity_2   || null,
         cargo_terms:  form.cargo_terms  || null,
         vessel_type:  form.vessel_type  || null,
         call_sign:    form.call_sign    || null,
@@ -325,6 +327,14 @@ export default function NewEntry() {
             <div className="form-group">
               <label className="form-label">Quantity (MTS)</label>
               <input value={form.quantity} onChange={e=>set('quantity',e.target.value)} placeholder="e.g. 23,998.160 MTS." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Commodity 2 (optional)</label>
+              <input value={form.commodity_2} onChange={e=>set('commodity_2',e.target.value)} placeholder="Second grade/commodity…" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Quantity 2 (MTS)</label>
+              <input value={form.quantity_2} onChange={e=>set('quantity_2',e.target.value)} placeholder="e.g. 5,000 MTS." />
             </div>
             <div className="form-group">
               <label className="form-label">Terms</label>

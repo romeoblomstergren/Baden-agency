@@ -17,7 +17,7 @@ const KANBAN_COLUMNS = [
 ]
 
 function TaskPanel({ operation, onClose }) {
-  const { tasks, loading, initTasks, toggleTask, addTask, deleteTask, clearAll, completedCount, total } = useTasks(operation.id)
+  const { tasks, loading, initTasks, toggleTask, updateTaskTime, updateResetsDaily, addTask, deleteTask, clearAll, resetTasks, completedCount, total } = useTasks(operation.id)
   const [newTask, setNewTask] = useState('')
   const [adding, setAdding] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -98,19 +98,35 @@ function TaskPanel({ operation, onClose }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {catTasks.map(t => (
                         <div key={t.id} style={{
-                          display: 'flex', alignItems: 'flex-start', gap: 10,
                           padding: '10px 12px', borderRadius: 8,
                           background: t.done ? 'var(--green-bg)' : 'var(--bg)',
                           border: `1px solid ${t.done ? 'rgba(26,94,56,0.2)' : 'var(--border)'}`,
+                          transition: 'all 0.15s',
                         }}>
-                          <input type="checkbox" checked={!!t.done}
-                            onChange={e => toggleTask(t.id, e.target.checked)}
-                            style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--green)', flexShrink: 0, cursor: 'pointer' }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.88rem', fontWeight: 500, textDecoration: t.done ? 'line-through' : 'none', color: t.done ? 'var(--muted)' : 'var(--text)' }}>{t.task}</div>
-                            {t.done_at && <div style={{ fontSize: '0.7rem', color: 'var(--green)', marginTop: 2 }}>✓ {new Date(t.done_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <input type="checkbox" checked={!!t.done}
+                              onChange={e => toggleTask(t.id, e.target.checked)}
+                              style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--green)', flexShrink: 0, cursor: 'pointer' }} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 500, textDecoration: t.done ? 'line-through' : 'none', color: t.done ? 'var(--muted)' : 'var(--text)' }}>{t.task}</div>
+                              {t.done_at && <div style={{ fontSize: '0.7rem', color: 'var(--green)', marginTop: 2 }}>✓ {new Date(t.done_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>}
+                            </div>
+                            <button onClick={() => deleteTask(t.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 2px', opacity: 0.5 }}>🗑</button>
                           </div>
-                          <button onClick={() => deleteTask(t.id)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem', padding: '0 2px', opacity: 0.5 }}>🗑</button>
+                          <div style={{ display: 'flex', gap: 10, marginTop: 8, alignItems: 'center', paddingLeft: 26 }}>
+                            <input
+                              type="datetime-local"
+                              value={t.task_time ? new Date(t.task_time).toISOString().slice(0,16) : ''}
+                              onChange={e => updateTaskTime(t.id, e.target.value ? new Date(e.target.value).toISOString() : null)}
+                              style={{ fontSize: '0.72rem', padding: '3px 6px', flex: 1, fontFamily: 'var(--mono)' }}
+                            />
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <input type="checkbox" checked={!!t.resets_daily}
+                                onChange={e => updateResetsDaily(t.id, e.target.checked)}
+                                style={{ accentColor: 'var(--blue)', cursor: 'pointer' }} />
+                              Daily reset
+                            </label>
+                          </div>
                         </div>
                       ))}
                     </div>

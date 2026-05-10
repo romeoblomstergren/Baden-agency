@@ -65,6 +65,19 @@ export function useTasks(operationId) {
       .eq('operation_id', operationId)
       .order('sort_order')
       .order('created_at')
+
+    // Auto-reset daily tasks that were completed before today
+    const today = new Date().toISOString().split('T')[0]
+    const toReset = (data || []).filter(t =>
+      t.resets_daily && t.done && t.done_at && t.done_at.split('T')[0] < today
+    )
+    if (toReset.length > 0) {
+      await supabase.from('vessel_tasks')
+        .update({ done: false, done_at: null, task_time: null })
+        .in('id', toReset.map(t => t.id))
+      toReset.forEach(t => { t.done = false; t.done_at = null; t.task_time = null })
+    }
+
     setTasks(data || [])
     setLoading(false)
   }, [operationId])
@@ -80,11 +93,23 @@ export function useTasks(operationId) {
   }
 
   const toggleTask = async (id, done) => {
+    const now = new Date().toISOString()
     await supabase.from('vessel_tasks').update({
       done,
-      done_at: done ? new Date().toISOString() : null,
+      done_at: done ? now : null,
+      task_time: done ? now : null,
     }).eq('id', id)
-    setTasks(t => t.map(task => task.id === id ? { ...task, done, done_at: done ? new Date().toISOString() : null } : task))
+    setTasks(t => t.map(task => task.id === id ? { ...task, done, done_at: done ? now : null, task_time: done ? now : null } : task))
+  }
+
+  const updateTaskTime = async (id, task_time) => {
+    await supabase.from('vessel_tasks').update({ task_time }).eq('id', id)
+    setTasks(t => t.map(task => task.id === id ? { ...task, task_time } : task))
+  }
+
+  const updateResetsDaily = async (id, resets_daily) => {
+    await supabase.from('vessel_tasks').update({ resets_daily }).eq('id', id)
+    setTasks(t => t.map(task => task.id === id ? { ...task, resets_daily } : task))
   }
 
   const updateNotes = async (id, notes) => {
@@ -109,7 +134,14 @@ export function useTasks(operationId) {
     setTasks([])
   }
 
+  const resetTasks = async () => {
+    await supabase.from('vessel_tasks')
+      .update({ done: false, done_at: null })
+      .eq('operation_id', operationId)
+    setTasks(t => t.map(task => ({ ...task, done: false, done_at: null })))
+  }
+
   const completedCount = tasks.filter(t => t.done).length
 
-  return { tasks, loading, initTasks, toggleTask, updateNotes, addTask, deleteTask, clearAll, completedCount, total: tasks.length, refetch: fetch }
+  return { tasks, loading, initTasks, toggleTask, updateTaskTime, updateResetsDaily, updateNotes, addTask, deleteTask, clearAll, resetTasks, completedCount, total: tasks.length, refetch: fetch }
 }
