@@ -10,20 +10,19 @@ const NAV = [
 ]
 
 const NAV_FULL = [
-  { to:'/',          label:'Operational' },
-  { to:'/register',  label:'Register'   },
-  { to:'/new',       label:'New Entry'  },
-  { to:'/tally',     label:'Tally'      },
-  { to:'/stats',     label:'Stats'      },
-  { to:'/finance',   label:'Finance'    },
-  { to:'/ports',     label:'Port Info'  },
-  { to:'/soa',       label:'SOA'        },
-  { to:'/templates', label:'Templates'  },
-  { to:'/vessels',   label:'Vessels'    },
-  { to:'/daily',     label:'Daily Report'},
-  { to:'/templates', label:'Templates'  },
-  { to:'/vessels',   label:'Vessels'    },
-  { to:'/daily',     label:'Daily Report'},
+  { to:'/',              label:'Operational'   },
+  { to:'/register',      label:'Register'      },
+  { to:'/new',           label:'New Entry'     },
+  { to:'/tally',         label:'Tally'         },
+  { to:'/stats',         label:'Stats'         },
+  { to:'/finance',       label:'Finance'       },
+  { to:'/ports',         label:'Port Info'     },
+  { to:'/port-overview', label:'Port Overview' },
+  { to:'/soa',           label:'SOA'           },
+  { to:'/templates',     label:'Templates'     },
+  { to:'/vessels',       label:'Vessels'       },
+  { to:'/contacts',      label:'Contacts'      },
+  { to:'/daily',         label:'Daily Report'  },
 ]
 
 export default function Layout({ children }) {
