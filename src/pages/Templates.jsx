@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useOperations, useActiveVessels } from '../hooks/useOperations'
+import { supabase } from '../lib/supabase'
 import { formatDate } from '../lib/constants'
 
 const BA_ADDRESS = `Suite 1702, Level 17,
@@ -8,159 +9,98 @@ Sheikh Mohammed Bin Rashid Bld,
 Downtown Dubai, Dubai, UAE
 PO BOX 416654`
 
+// Helper — all template functions receive a fully-loaded operation object
+function vals(op) {
+  return {
+    v:          op.vessel_name  || '[VESSEL NAME]',
+    port:       op.port         || '[PORT]',
+    eta:        op.eta          ? formatDate(op.eta) + (op.eta_ampm ? ' ' + op.eta_ampm : '') : '[PLEASE ADVISE]',
+    etb:        op.etb          ? formatDate(op.etb) + (op.etb_ampm ? ' ' + op.etb_ampm : '') : 'PLEASE ADVISE',
+    etc:        op.etc          ? formatDate(op.etc) + (op.etc_ampm ? ' ' + op.etc_ampm : '') : 'PLEASE ADVISE',
+    etd:        op.etd          ? formatDate(op.etd) + (op.etd_ampm ? ' ' + op.etd_ampm : '') : 'PLEASE ADVISE',
+    imo:        op.imo          || '[IMO]',
+    mmsi:       op.mmsi         || '[MMSI]',
+    call_sign:  op.call_sign    || '[CALL SIGN]',
+    flag:       op.flag         || '[FLAG]',
+    vessel_type:op.vessel_type  || '[TYPE]',
+    gt:         op.gt           || '[GT]',
+    dwt:        op.dwt          || '[DWT]',
+    loa:        op.loa          || '[LOA]',
+    beam:       op.beam         || '[BEAM]',
+    year_built: op.year_built   || '[YEAR]',
+    client:     op.client_name  || '[PRINCIPAL]',
+    sub_agent:  op.sub_agent    || '[SUB-AGENT]',
+    commodity:  op.commodity    || '[COMMODITY]',
+    commodity2: op.commodity_2  || '',
+    quantity:   op.quantity     || '[QUANTITY]',
+    quantity2:  op.quantity_2   || '',
+    terms:      op.cargo_terms  || '[TERMS]',
+    operator:   op.operator     || '[OPERATOR]',
+    ref:        op.ref          || '[REF]',
+    notes:      op.notes        || '',
+  }
+}
+
 function opaTemplate(op) {
-  const v = op.vessel_name || '[VESSEL NAME]'
-  const port = op.port || '[PORT]'
-  const eta = op.eta ? formatDate(op.eta) : '[PLEASE ADVISE]'
-  const etb = op.etb ? formatDate(op.etb) : 'PLEASE ADVISE'
-  const etd = op.etd ? formatDate(op.etd) : 'PLEASE ADVISE'
-  const imo = op.imo || '[IMO]'
-  const mmsi = op.mmsi || '[MMSI]'
-  const client = op.client_name || '[PRINCIPAL]'
-  const subAgent = op.sub_agent || '[SUB-AGENT]'
-  const commodity = op.commodity || '${commodity}'
-  const quantity = op.quantity || '${quantity}'
-  const terms = op.cargo_terms || '${terms}'
-  const vesselType = op.vessel_type || '${vesselType}'
-  const callSign = op.call_sign || '${callSign}'
-  const flag = op.flag || '${flag}'
-  const gt = op.gt || '${gt}'
-  const dwt = op.dwt || '${dwt}'
-  const loa = op.loa || '${loa}'
-  const beam = op.beam || '${beam}'
-  const yearBuilt = op.year_built || '${yearBuilt}'
+  const x = vals(op)
+  return `${x.v} - ${x.port} - OPA APPOINTMENT - ${x.quantity} ${x.commodity}
 
-  return `${v} - ${port} - [OPERATION TYPE] - ${quantity} ${commodity}
-
-TO: ${subAgent.toUpperCase()} - AGENCY DEPT.
-FM: BADEN AGENCY - [OPERATOR NAME] - SERVICE PROVIDER
+TO: ${x.sub_agent.toUpperCase()} - AGENCY DEPT.
+FM: BADEN AGENCY - ${x.operator.toUpperCase()} - SERVICE PROVIDER
 ---------------------------------------------------------------------------------------------------------------------------------------------------
-PORT                             \t- ${port}
-CARGO                         \t- ${commodity}
-QUANTITY                     \t- ${quantity}
-ETA\t\t\t\t\t- ${eta} AGW. WP. @ ${port} ANCHORAGE
+PORT                             \t- ${x.port}
+CARGO                         \t- ${x.commodity}${x.commodity2 ? ' / ' + x.commodity2 : ''}
+QUANTITY                     \t- ${x.quantity}${x.quantity2 ? ' / ' + x.quantity2 : ''}
+ETA\t\t\t\t\t- ${x.eta} AGW. WP. @ ${x.port} ANCHORAGE
 POB                               \t- PLEASE ADVISE
-ETB                               \t- ${etb}
+ETB                               \t- ${x.etb}
 OPS. EXP. TO START    - PLEASE ADVISE
 TURN-AROUND\t\t- PLEASE ADVISE
-ETS\t\t\t\t\t- ${etd}
+ETS\t\t\t\t\t- ${x.etd}
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-Ref. [correspondence reference], we hereby appoint ${subAgent} to act as protective agent for and on behalf of BADEN AGENCY for subject mentioned vessel's forthcoming call at ${port} for [operation type] [quantity] [commodity] under [terms] terms.
+Ref. ${x.ref}, we hereby appoint ${x.sub_agent} to act as protective agent for and on behalf of BADEN AGENCY for subject mentioned vessel's forthcoming call at ${x.port} for discharging/loading ${x.quantity} ${x.commodity} under ${x.terms} terms.
 
-Please advise designated berth/s and MAX draft at each estimated berth. Please also advise daily average [discharging/loading] rate at each designated berth.
-
-Please be our eyes and ears on the ground.
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-APPOINTMENT - SUPER CARGO - SCOPE OF WORK + REPORTING & SOF INSTRUCTIONS
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-OPERATIONAL DETAILS:
-------------------------------------
-Vessel\t\t\t\t: ${v}
-Port\t\t\t\t\t: ${port}
-Terms\t\t\t\t: [TERMS]
-C/P Date\t\t\t\t: [PLEASE ADVISE]
-NOR\t\t\t\t\t: N/A
-ETB\t\t\t\t\t: ${etb}
-ETC/S\t\t\t\t: PLEASE ADVISE
-Operation\t\t\t: [DISCHARGING / LOADING]
-Berth(s)\t\t\t\t: 1 SPSB ${port}
-Cargo\t\t\t\t: ${commodity}
-Quantity\t\t\t\t: ${quantity}
-
-VESSEL DETAILS:
---------------------------
-IMO\t\t\t\t\t: ${imo}
-Name\t\t\t\t: ${v}
-Detailed vessel type\t: ${vesselType}
-MMSI\t\t\t\t: ${mmsi}
-Call sign\t\t\t\t: ${callSign}
-Flag\t\t\t\t\t: ${flag}
-Gross Tonnage\t\t: ${gt} MTS.
-DWT\t\t\t\t\t: ${dwt} MTS.
-Length Overall\t\t: ${loa} M.
-Breadth Extreme\t\t: ${beam} M.
-Year built\t\t\t\t: ${yearBuilt}
-
-COMMUNICATION DETAILS:
------------------------------------------
-MASTER
-Call sign\t\t\t\t: ${callSign}
-
-RECEIVER'S AGENT:
--------------------------------
-[RECEIVER AGENT NAME]
-
-PIC\t\t\t\t\t: [NAME] / AGENCY DEPT.
-Mail\t\t\t\t\t: [EMAIL]
-Mobile\t\t\t\t: [PHONE]
-
-COMMUNICATIONS INSTRUCTIONS:
-----------------------------------------------------
-- Please keep below mailing list fully up-dated on berthing/[loading/discharging] prospects as well as all other matters concerning this call.
-- For urgent matters please call this office at any time!
+VESSEL PARTICULARS:
+--------------------------------------------
+Vessel Name\t\t: ${x.v}
+IMO No.\t\t\t: ${x.imo}
+MMSI\t\t\t\t: ${x.mmsi}
+Call Sign\t\t\t: ${x.call_sign}
+Flag\t\t\t\t: ${x.flag}
+Type\t\t\t\t: ${x.vessel_type}
+GT\t\t\t\t\t: ${x.gt}
+DWT\t\t\t\t: ${x.dwt}
+LOA\t\t\t\t: ${x.loa} m
+Beam\t\t\t\t: ${x.beam} m
+Year Built\t\t\t: ${x.year_built}
 
 MAILING LIST:
----------------------
+--------------------------------------------
 Baden Agency LLC
-
-PIC\t\t\t\t\t: [OPERATOR NAME]
+PIC\t\t\t\t\t: ${x.operator}
 Mail\t\t\t\t\t: agency@baden-agency.com
 
-SCOPE OF WORK:
----------------------------
-- Liaise with Receiver's agent in order to ensure that pre-arrival formalities are duly taken care of.
-- Screen Receiver's agent's PD/A in order to ensure that only official tariffs are applied, that only compulsory costs are included, that no extra costs are added and that applied agency fee is in line with market level.
-- Have a boarding agent on the ground every working day throughout the cargo operation monitoring the operation as many hours as possible.
-- Liaise with Receiver's agent / Stevedore Foreman / Receiver in order to be fully on top of the cargo operation and keep this office up-dated accordingly.
-- Monitor, record and report ANY/ALL stoppages/delays and ensure that remarks are inserted in SOF accordingly.
-- Present intermediary SOF to the Master on a regular basis throughout the operation, in order to ensure that SOF is issued in accordance with Captain's Log.
+SCOPE OF WORK FOR OPA:
+--------------------------------------------
+- Monitor that the vessel is handled as per the charter party.
+- Follow that all costs are kept to a minimum at all times.
+- Follow that no unauthorized cost is added to the DA.
+- Monitor that the port operations are conducted in accordance with the stowage plan.
+- Have a boarding agent on the ground every working day throughout the cargo operation.
+- Liaise with Receiver's agent / Stevedore Foreman / Receiver in order to be fully on top of the cargo operation.
+- Present intermediary SOF to the Master on a regular basis.
 - Send 2 (two) daily operational reports every working day throughout the cargo operation.
-\t1) AM report\t- To be send before noontime.
-\t2) PM report\t- To be send latest 12 hrs. after AM report.
 - Report any incident to this office that has any in/direct impact on the cargo operation.
 - Send SOF draft to this office for approval MIN. 24 hrs. before expected completion of cargo operation.
 
 DISBURSEMENT ACCOUNT:
------------------------------------------
-${terms}
-
-- ANY / ALL cargo related costs to be for Chrtr's / Receiver's account.
-- ANY / ALL taxes / dues levied (calculated) on freight (cargo) to be for Chrtr's / Receiver's account.
-- ANY / ALL taxes / dues levied (calculated) on freight vessel to be for (Disp.) Owner's account.
+--------------------------------------------
+- Submit PD/A for our approval prior vessel's arrival.
 - Only official port tariffs to be applied.
-- Only compulsory costs to be included in Chrtrs' agents' PD/A.
-- No overtime costs to be included - if overtime applicable same to be settled in FD/A.
-- Chrtrs' agents' agency fee to cover communication, postage, petties etc. NO extras will be accepted.
-
-AGENCY FEE:
----------------------
-Please screen Receiver's agent's agency fee.
-- Agency fee to include/cover communication, postage, petties etc. NO extras will be accepted.
-- Agency fee to be in line with market level.
-
-BILL OF LADING:
--------------------------
-- Please check whereabouts of OBL with Chrtrs./Receivers and advise if OBL expected to be available for presentation to the Master upon vessel's arrival.
-
-PROTECTIVE AGENCY FEE:
------------------------------------------
-- OPA Fee [AMOUNT] ALL IN LUMPSUM INCL. VAT agreed.
-
-INVOICING INSTRUCTIONS:
-----------------------------------------
-- Any additional port expenses as well as Husbandry enquiries to be quoted to BADEN AGENCY LLC only, and always to be accepted by BADEN AGENCY LLC prior rendering the service.
-- As agreed OPA Fee [AMOUNT] ALL IN LUMPSUM INCL. VAT to apply.
-
-- Invoice to be issued and send to:
-${client}
-c/o BADEN AGENCY
-${BA_ADDRESS}
-- As Agent Only -
+- Only compulsory costs to be included.
+- Agency fee to cover communication, postage, petties etc. NO extras will be accepted.
+- For any 3rd party cost, please provide original supporting voucher.
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -169,61 +109,39 @@ PLEASE REVERT WITH PORT & OPERATIONAL INFO AS REQUESTED BELOW
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 HEALTH PROTOCOL:
--------------------------------
 - Please advise health protocol / procedure.
-- Please advise if there are any particular restrictions to take into consideration.
+- Please advise if there are any particular restrictions.
 
 ISPS & PFSO:
---------------------
 - Please advise ISPS security level.
 - Please revert with name and contact details of PFSO.
 
 TUG ASSISTANCE:
----------------------------
 - Please advise if tug assistance is compulsory.
-- If positive please advise number of tug-boats to be engaged and costs.
+- If positive, please advise number of tug-boats and costs.
 
 PILOTAGE:
-----------------
 - Please advise if pilotage is compulsory.
 
 PORT INFO & RESTRICTIONS:
---------------------------------------------
 - Please advise safe anchorage position.
 - Please advise pilot rendez-vous point.
 - Please advise designated berth.
-- Please revert with port info and restrictions.
-- Please advise if the port is a tidal port - IF positive, please send tide-table/link.
 - Please advise MAX draft at designated berth.
-- Please advise MAX air-draft - IF applicable.
 - Please advise MAX LOA at designated berth.
-- Please advise MAX beam at designated berth - IF applicable.
-- Please advise if the port is first come, first served.
-- Please advise if the port is a daylight only navigation port.
+- Please advise if tidal port.
+- Please advise if daylight only navigation.
 
 WORKING HOURS:
-----------------------------
 - Please advise port working hours.
-- Please advise how many shifts stevedore/dockers will be working per day.
-- Please advise working hours per shift.
-
-DISCHARGING RATE:
---------------------------------
-- Please advise MAX daily discharging rate as well as customary daily discharging rate.
-
-DISCHARGING METHOD:
--------------------------------------
-- Please advise if cargo will be discharged by vessel's gear or shore cranes.
-- Discharging to pier / to trucks / to trucks via hoppers / to wagons / to silos / to barges.
+- Please advise stevedore shift hours.
 
 WATER DENSITY:
--------------------------
 - Please advise water density.
 
-MARPOL REGULATIONS & OPEN LOOP SCRUBBERS:
------------------------------------------------------------------------------
-- Please advise port regulations pertaining to ballast exchange, Quarantine/health regulations/MARPOL.
-- Please advise if the use of open loop scrubber system is allowed.
+MARPOL REGULATIONS:
+- Please advise MARPOL regulations.
+- Please advise if open loop scrubber system is allowed.
 
 +++
 
@@ -231,57 +149,61 @@ Sake good order, we kindly ask you to confirm safe receipt of this message by re
 }
 
 function pagTemplate(op) {
-  const v = op.vessel_name || '[VESSEL NAME]'
-  const port = op.port || '[PORT]'
-  const eta = op.eta ? formatDate(op.eta) : '[PLEASE ADVISE]'
-  const etb = op.etb ? formatDate(op.etb) : 'PLEASE ADVISE'
-  const etd = op.etd ? formatDate(op.etd) : 'PLEASE ADVISE'
-  const imo = op.imo || '[IMO]'
-  const mmsi = op.mmsi || '[MMSI]'
-  const client = op.client_name || '[PRINCIPAL]'
-
-  return `${v} - ${port} - PORT AGENCY APPOINTMENT - [OPERATION TYPE]
+  const x = vals(op)
+  return `${x.v} - ${x.port} - PORT AGENCY APPOINTMENT
 
 TO: [PORT AGENT NAME] - AGENCY DEPT.
-FM: BADEN AGENCY - [OPERATOR NAME] - ON BEHALF OF ${client.toUpperCase()}
+FM: BADEN AGENCY - ${x.operator.toUpperCase()} - ON BEHALF OF ${x.client.toUpperCase()}
 ---------------------------------------------------------------------------------------------------------------------------------------------------
-PORT                             \t- ${port}
-CARGO                         \t- ${commodity}
-QUANTITY                     \t- ${quantity}
-ETA\t\t\t\t\t- ${eta} AGW. WP.
-ETB                               \t- ${etb}
-ETS\t\t\t\t\t- ${etd}
+PORT                             \t- ${x.port}
+CARGO                         \t- ${x.commodity}${x.commodity2 ? ' / ' + x.commodity2 : ''}
+QUANTITY                     \t- ${x.quantity}${x.quantity2 ? ' / ' + x.quantity2 : ''}
+ETA\t\t\t\t\t- ${x.eta} AGW. WP.
+ETB                               \t- ${x.etb}
+ETS\t\t\t\t\t- ${x.etd}
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
 Dear Sir/Madam,
 
-We hereby appoint you to act as Port Agent for and on behalf of ${client} / BADEN AGENCY for subject mentioned vessel's forthcoming call at ${port}.
+We hereby appoint you to act as Port Agent for and on behalf of ${x.client} / BADEN AGENCY for subject mentioned vessel's forthcoming call at ${x.port}.
+
+VESSEL PARTICULARS:
+--------------------------------------------
+Vessel Name\t\t: ${x.v}
+IMO No.\t\t\t: ${x.imo}
+MMSI\t\t\t\t: ${x.mmsi}
+Call Sign\t\t\t: ${x.call_sign}
+Flag\t\t\t\t: ${x.flag}
+Type\t\t\t\t: ${x.vessel_type}
+GT\t\t\t\t\t: ${x.gt}
+DWT\t\t\t\t: ${x.dwt}
+LOA\t\t\t\t: ${x.loa} m
+Beam\t\t\t\t: ${x.beam} m
+Year Built\t\t\t: ${x.year_built}
 
 OPERATIONAL DETAILS:
-------------------------------------
-Vessel\t\t\t\t: ${v}
-Port\t\t\t\t\t: ${port}
-IMO\t\t\t\t\t: ${imo}
-MMSI\t\t\t\t: ${mmsi}
+--------------------------------------------
+Port\t\t\t\t\t: ${x.port}
 Operation\t\t\t: [DISCHARGING / LOADING]
-Cargo\t\t\t\t: ${commodity}
-Quantity\t\t\t\t: ${quantity}
-ETA\t\t\t\t\t: ${eta}
-ETB\t\t\t\t\t: ${etb}
-ETD\t\t\t\t\t: ${etd}
+Cargo\t\t\t\t: ${x.commodity}${x.commodity2 ? ' / ' + x.commodity2 : ''}
+Quantity\t\t\t\t: ${x.quantity}${x.quantity2 ? ' / ' + x.quantity2 : ''}
+Terms\t\t\t\t: ${x.terms}
+ETA\t\t\t\t\t: ${x.eta}
+ETB\t\t\t\t\t: ${x.etb}
+ETD\t\t\t\t\t: ${x.etd}
 
 PRINCIPAL:
-------------------
-${client}
+--------------------------------------------
+${x.client}
 
 MAILING LIST:
----------------------
+--------------------------------------------
 Baden Agency LLC
-PIC\t\t\t\t\t: [OPERATOR NAME]
+PIC\t\t\t\t\t: ${x.operator}
 Mail\t\t\t\t\t: agency@baden-agency.com
 
 SCOPE OF WORK:
----------------------------
+--------------------------------------------
 - Handle all port formalities including customs clearance, port health, immigration.
 - Arrange pilotage and tug assistance as required.
 - Arrange berthing in coordination with port authorities.
@@ -294,22 +216,22 @@ SCOPE OF WORK:
 - Collect all relevant cargo documents before vessel's departure.
 
 DISBURSEMENT ACCOUNT:
------------------------------------------
-- Please submit PD/A for our approval prior vessel's arrival.
+--------------------------------------------
+- Submit PD/A for our approval prior vessel's arrival.
 - Only official port tariffs to be applied.
 - Only compulsory costs to be included.
-- Agency fee to cover communication, postage, petties etc. NO extras will be accepted.
+- Agency fee to cover communication, postage, petties etc.
 - For any 3rd party cost, please provide original supporting voucher.
 
 PORT AGENCY FEE:
-------------------------------
+--------------------------------------------
 - Agency fee to be in line with market level.
 - Please advise your agency fee.
 
 INVOICING INSTRUCTIONS:
-----------------------------------------
+--------------------------------------------
 - Invoice to be issued and sent to:
-${client}
+${x.client}
 c/o BADEN AGENCY
 ${BA_ADDRESS}
 - As Agent Only -
@@ -321,45 +243,37 @@ PLEASE REVERT WITH PORT & OPERATIONAL INFO AS REQUESTED BELOW
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 HEALTH PROTOCOL:
--------------------------------
 - Please advise health protocol / procedure.
-- Please advise if there are any particular restrictions to take into consideration.
+- Please advise if there are any particular restrictions.
 
 ISPS & PFSO:
---------------------
 - Please advise ISPS security level.
 - Please revert with name and contact details of PFSO.
 
 TUG ASSISTANCE:
----------------------------
 - Please advise if tug assistance is compulsory.
-- If positive please advise number of tug-boats to be engaged and costs.
+- If positive, please advise number of tug-boats and costs.
 
 PILOTAGE:
-----------------
 - Please advise if pilotage is compulsory.
 
 PORT INFO & RESTRICTIONS:
---------------------------------------------
 - Please advise safe anchorage position.
 - Please advise pilot rendez-vous point.
 - Please advise designated berth.
 - Please advise MAX draft at designated berth.
 - Please advise MAX LOA at designated berth.
-- Please advise if the port is a tidal port.
-- Please advise if daylight only navigation port.
+- Please advise if tidal port.
+- Please advise if daylight only navigation.
 
 WORKING HOURS:
-----------------------------
 - Please advise port working hours.
 - Please advise stevedore shift hours.
 
 WATER DENSITY:
--------------------------
 - Please advise water density.
 
 MARPOL REGULATIONS:
-------------------------------------
 - Please advise MARPOL regulations.
 - Please advise if open loop scrubber system is allowed.
 
@@ -369,55 +283,176 @@ Sake good order, we kindly ask you to confirm safe receipt of this message by re
 }
 
 const TEMPLATES = [
-  { id: 'opa',       label: '🛡️ OPA Appointment',      fn: opaTemplate },
-  { id: 'pag',       label: '⚓ Port Agency Appointment', fn: pagTemplate },
-  { id: 'arrival',   label: '📍 Arrival Notice',         fn: (op) => `Dear Sir/Madam,\n\nWe hereby give notice of the expected arrival of:\n\nVessel: ${op.vessel_name || '—'}\nPort: ${op.port || '—'}\nETA: ${op.eta ? formatDate(op.eta) : '[PLEASE ADVISE]'}\nPrincipal: ${op.client_name || '—'}\nReference: ${op.ref || '—'}\n\nWe will keep you updated with any changes to the ETA.\n\nKind regards,\nBaden Agency` },
-  { id: 'departure', label: '🚢 Departure Notice',       fn: (op) => `Dear Sir/Madam,\n\nWe hereby give notice of the expected departure of:\n\nVessel: ${op.vessel_name || '—'}\nPort: ${op.port || '—'}\nETD: ${op.etd ? formatDate(op.etd) : '[PLEASE ADVISE]'}\nPrincipal: ${op.client_name || '—'}\nReference: ${op.ref || '—'}\n\nPlease confirm all port formalities are in order.\n\nKind regards,\nBaden Agency` },
-  { id: 'daily',     label: '📋 Daily Status Report',   fn: (op) => `Dear Sir/Madam,\n\nDaily status report for ${op.vessel_name || '—'}:\n\nVessel: ${op.vessel_name || '—'}\nPort: ${op.port || '—'}\nStatus: ${op.vessel_status || '—'}\nETA: ${op.eta ? formatDate(op.eta) : '—'}\nETB: ${op.etb ? formatDate(op.etb) : '—'}\nETD: ${op.etd ? formatDate(op.etd) : '—'}\nReference: ${op.ref || '—'}\n\nOperations update:\n[ADD UPDATE HERE]\n\nSub-agent: ${op.sub_agent || '—'}\n\nKind regards,\nBaden Agency` },
-  { id: 'cargo',     label: '📦 Cargo Confirmation',    fn: (op) => `Dear Sir/Madam,\n\nWe hereby confirm the cargo details for:\n\nVessel: ${op.vessel_name || '—'}\nPort: ${op.port || '—'}\nPrincipal: ${op.client_name || '—'}\nReference: ${op.ref || '—'}\n\nCargo details:\n- Commodity: [ADD COMMODITY]\n- Quantity: [ADD QUANTITY]\n- ETC: [ADD ETC]\n\nKind regards,\nBaden Agency` },
-  { id: 'invoice',   label: '💰 Invoice Covering Letter', fn: (op) => `Dear Sir/Madam,\n\nPlease find enclosed our invoice for services rendered:\n\nVessel: ${op.vessel_name || '—'}\nPort: ${op.port || '—'}\nReference: ${op.ref || '—'}\nInvoice amount: [ADD AMOUNT]\n\nWe kindly request payment within 30 days of receipt.\n\nKind regards,\nBaden Agency` },
+  { id: 'opa',       label: '🛡️ OPA Appointment',         fn: opaTemplate },
+  { id: 'pag',       label: '⚓ Port Agency Appointment',  fn: pagTemplate },
+  { id: 'arrival',   label: '📍 Arrival Notice',           fn: (op) => {
+    const x = vals(op)
+    return `Dear Sir/Madam,
+
+We hereby give notice of the expected arrival of:
+
+Vessel\t\t: ${x.v}
+IMO\t\t\t: ${x.imo}
+Flag\t\t\t: ${x.flag}
+Type\t\t\t: ${x.vessel_type}
+DWT\t\t\t: ${x.dwt}
+Port\t\t\t: ${x.port}
+ETA\t\t\t: ${x.eta}
+ETB\t\t\t: ${x.etb}
+Cargo\t\t: ${x.commodity}${x.commodity2 ? ' / ' + x.commodity2 : ''}
+Quantity\t: ${x.quantity}${x.quantity2 ? ' / ' + x.quantity2 : ''}
+Principal\t: ${x.client}
+Reference\t: ${x.ref}
+
+We will keep you updated with any changes to the ETA.
+
+Kind regards,
+Baden Agency`
+  }},
+  { id: 'departure', label: '🚢 Departure Notice',         fn: (op) => {
+    const x = vals(op)
+    return `Dear Sir/Madam,
+
+We hereby give notice of the expected departure of:
+
+Vessel\t\t: ${x.v}
+Port\t\t\t: ${x.port}
+ETD\t\t\t: ${x.etd}
+Principal\t: ${x.client}
+Reference\t: ${x.ref}
+
+Please confirm all port formalities are in order prior departure.
+
+Kind regards,
+Baden Agency`
+  }},
+  { id: 'daily',     label: '📋 Daily Status Report',     fn: (op) => {
+    const x = vals(op)
+    return `Dear Sir/Madam,
+
+Daily status report for ${x.v} at ${x.port}:
+
+Vessel\t\t\t: ${x.v}
+Port\t\t\t\t: ${x.port}
+Status\t\t\t: ${op.vessel_status || '—'}
+ETA\t\t\t\t: ${x.eta}
+ETB\t\t\t\t: ${x.etb}
+ETD\t\t\t\t: ${x.etd}
+Sub-Agent\t\t: ${x.sub_agent}
+Reference\t\t: ${x.ref}
+
+OPERATIONS UPDATE:
+[ADD UPDATE HERE]
+
+CARGO UPDATE:
+[ADD CARGO UPDATE HERE]
+
+Kind regards,
+Baden Agency`
+  }},
+  { id: 'nor',       label: '📄 NOR Tender',              fn: (op) => {
+    const x = vals(op)
+    const now = new Date()
+    const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
+    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' LT'
+    return `NOTICE OF READINESS
+
+To: ${x.client}
+    ${x.sub_agent}
+cc: Baden Agency
+
+Vessel\t\t\t: ${x.v}
+Port\t\t\t\t: ${x.port}
+Date\t\t\t\t: ${date}
+Time\t\t\t\t: ${time}
+
+Dear Sir/Madam,
+
+We hereby tender Notice of Readiness on behalf of the Master and Owners of the ${x.v}.
+
+The vessel is in all respects ready to commence [LOADING / DISCHARGING] of ${x.quantity} ${x.commodity} at ${x.port}.
+
+NOR tendered: ${date} at ${time}
+
+[ACCEPTED / NOT ACCEPTED] — [REASON IF NOT ACCEPTED]
+
+Master: [MASTER NAME]
+Agent: Baden Agency`
+  }},
+  { id: 'invoice',   label: '💰 Invoice Covering Letter', fn: (op) => {
+    const x = vals(op)
+    return `Dear Sir/Madam,
+
+Please find enclosed our invoice for services rendered in connection with the above mentioned vessel's call at ${x.port}.
+
+Vessel\t\t: ${x.v}
+Port\t\t\t: ${x.port}
+Reference\t: ${x.ref}
+Principal\t: ${x.client}
+
+Invoice details:
+- Invoice No.: [INVOICE NUMBER]
+- Invoice Date: [DATE]
+- Amount: [AMOUNT] [CURRENCY]
+- Due Date: [DUE DATE]
+
+We kindly request payment within 30 days of receipt.
+
+Please do not hesitate to contact us should you have any queries.
+
+Kind regards,
+Baden Agency
+${BA_ADDRESS}
+agency@baden-agency.com`
+  }},
 ]
 
 export default function Templates() {
-  const { data: allOps } = useOperations({ limit: 2000 })
-  const { data: active } = useActiveVessels()
-  const [selectedOp, setSelectedOp]           = useState(null)
+  const { data: allOps }  = useOperations({ limit: 2000 })
+  const { data: active }  = useActiveVessels()
+  const [selectedOp, setSelectedOp]             = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [customBody, setCustomBody]             = useState('')
   const [copied, setCopied]                     = useState(false)
+  const [fullOp, setFullOp]                     = useState(null)
 
-  const op       = selectedOp       ? allOps.find(o => o.id === selectedOp) : null
+  const op       = fullOp || (selectedOp ? allOps.find(o => o.id === selectedOp) : null)
   const template = selectedTemplate ? TEMPLATES.find(t => t.id === selectedTemplate) : null
-  const subject  = op ? `${op.vessel_name || ''} - ${op.port || ''} - ${template?.label?.replace(/^[^\w]+/, '') || ''}` : ''
-  const body     = customBody
+  const subject  = op && template ? `${op.vessel_name || ''} - ${op.port || ''} - ${template.label.replace(/^[^\w]+/, '')}` : ''
+
+  const generateTemplate = (tid, operation) => {
+    const t = TEMPLATES.find(t => t.id === tid)
+    setCustomBody(t && operation ? t.fn(operation) : '')
+  }
 
   const handleTemplateSelect = (tid) => {
     setSelectedTemplate(tid)
     setCopied(false)
-    if (op) {
-      const t = TEMPLATES.find(t => t.id === tid)
-      setCustomBody(t ? t.fn(op) : '')
-    }
+    if (fullOp) generateTemplate(tid, fullOp)
+    else if (op) generateTemplate(tid, op)
   }
 
-  const handleOpSelect = (id) => {
+  const handleOpSelect = async (id) => {
     setSelectedOp(id)
     setCopied(false)
-    if (selectedTemplate) {
-      const t = TEMPLATES.find(t => t.id === selectedTemplate)
-      const operation = allOps.find(o => o.id === id)
-      setCustomBody(t && operation ? t.fn(operation) : '')
+    setFullOp(null)
+    if (!id) return
+    // Fetch full operation with all vessel particulars
+    const { data } = await supabase.from('operations').select('*').eq('id', id).single()
+    if (data) {
+      setFullOp(data)
+      if (selectedTemplate) generateTemplate(selectedTemplate, data)
     }
   }
 
   const copyBody = () => {
-    navigator.clipboard.writeText(body)
+    navigator.clipboard.writeText(customBody)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   const openMail = () => {
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(customBody)}`
   }
 
   const exportCalendar = () => {
@@ -444,11 +479,11 @@ export default function Templates() {
     <div className="page" style={{ maxWidth: 1100 }}>
       <div className="page-header">
         <h1>Templates</h1>
-        <button onClick={exportCalendar} className="btn-secondary btn-sm">📅 Export to Apple Calendar</button>
+        <button onClick={exportCalendar} className="btn-secondary btn-sm">📅 Export to Calendar</button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
-        {/* Left */}
+        {/* Left panel */}
         <div>
           <div className="card" style={{ padding: 16, marginBottom: 12 }}>
             <div className="section-title" style={{ marginTop: 0 }}>Template type</div>
@@ -478,10 +513,18 @@ export default function Templates() {
                 {allOps.map(o => <option key={o.id} value={o.id}>{o.ref} · {o.vessel_name}</option>)}
               </optgroup>
             </select>
+            {fullOp && (
+              <div style={{ marginTop: 10, fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.6 }}>
+                ✓ Full details loaded<br/>
+                {fullOp.imo && `IMO: ${fullOp.imo}`}{fullOp.flag && ` · ${fullOp.flag}`}<br/>
+                {fullOp.vessel_type && fullOp.vessel_type}
+                {fullOp.dwt && ` · ${fullOp.dwt} DWT`}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right */}
+        {/* Right panel */}
         <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
           {!selectedTemplate || !selectedOp ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--muted)' }}>
