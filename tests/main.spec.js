@@ -70,7 +70,7 @@ test.describe('Baden Agency', () => {
     await login(page)
     await page.goto('/daily')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('Daily Report')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: 'Daily Report' })).toBeVisible({ timeout: 10000 })
     // Ensure no white screen / spinner stuck
     await expect(page.locator('.spinner')).toHaveCount(0, { timeout: 10000 })
     console.log('✅ Daily report loaded')
