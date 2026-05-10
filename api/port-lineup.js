@@ -83,6 +83,38 @@ export default async function handler(req, res) {
     } catch(e) { console.log('VesselAPI current vessels failed:', e.message) }
   }
 
+  // ── 1b. Try VesselAPI vessels with this port as destination ──
+  if (vesselKey && port) {
+    try {
+      const url = `https://api.vesselapi.com/v1/location/vessels/bounding-box?` + new URLSearchParams({
+        'filter.destination': port.toUpperCase(),
+        'limit': '20',
+      })
+      const r = await fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + vesselKey },
+        signal: AbortSignal.timeout(6000),
+      })
+      if (r.ok) {
+        const data = await r.json()
+        const vessels = (data.vessels || []).filter(v =>
+          (v.destination || '').toUpperCase().includes(port.toUpperCase().slice(0, 4))
+        ).map(v => ({
+          name:        v.vessel_name || v.name || '—',
+          imo:         v.imo  || null,
+          mmsi:        v.mmsi || null,
+          flag:        null,
+          vessel_type: null,
+          eta:         v.eta  || null,
+          speed:       v.sog  ? Number(v.sog).toFixed(1) + ' kn' : null,
+          status:      'Expected',
+        }))
+        if (vessels.length > 0) {
+          return res.status(200).json({ port, locode, vessels, source: 'VesselAPI (live AIS — destination match)' })
+        }
+      }
+    } catch(e) { console.log('VesselAPI destination search failed:', e.message) }
+  }
+
   // ── 2. DeepSeek fallback ──
   if (deepseekKey) {
     try {
