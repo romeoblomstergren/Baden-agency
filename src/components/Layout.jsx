@@ -1,11 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import GlobalAI from './GlobalAI'
-import { useAIContext } from '../context/AIContext'
-import GlobalAI from './GlobalAI'
-import { useAIContext } from '../context/AIContext'
-import GlobalAI from './GlobalAI'
-import { useAIContext } from '../context/AIContext'
 import { useAuth } from '../hooks/useAuth'
+import GlobalAI from './GlobalAI'
 
 const NAV = [
   { to:'/',          icon:'⚓', label:'Ops'      },
@@ -29,7 +24,7 @@ const NAV_FULL = [
   { to:'/vessels',       label:'Vessels'       },
   { to:'/contacts',      label:'Contacts'      },
   { to:'/daily',         label:'Daily Report'  },
-  { to:'/health',         label:'⚙ Health'       },
+  { to:'/health',        label:'⚙ Health'      },
 ]
 
 export default function Layout({ children }) {
@@ -39,7 +34,6 @@ export default function Layout({ children }) {
 
   return (
     <div style={{minHeight:'100dvh',display:'flex',flexDirection:'column'}}>
-      {/* Desktop top bar */}
       <header style={{
         background:'var(--navy)',height:'var(--nav-h)',
         display:'flex',alignItems:'center',padding:'0 20px',gap:4,
@@ -73,11 +67,9 @@ export default function Layout({ children }) {
       </header>
 
       <main style={{flex:1}}>{children}</main>
-      <GlobalAI />
-      <GlobalAI />
+
       <GlobalAI />
 
-      {/* Mobile bottom tabs */}
       <nav style={{
         position:'fixed',bottom:0,left:0,right:0,
         height:'var(--bottom-h)',
@@ -141,14 +133,9 @@ export function OpTypeBadge({ code }) {
   const bg = colors[code] || '#888'
   return (
     <span style={{
-      display: 'inline-block',
-      background: bg,
-      color: '#fff',
-      fontSize: '0.7rem',
-      fontWeight: 600,
-      padding: '2px 8px',
-      borderRadius: 4,
-      fontFamily: 'var(--mono)',
+      display:'inline-block', background:bg, color:'#fff',
+      fontSize:'0.7rem', fontWeight:600, padding:'2px 8px',
+      borderRadius:4, fontFamily:'var(--mono)',
     }}>{code}</span>
   )
 }
