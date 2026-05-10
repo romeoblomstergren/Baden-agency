@@ -37,8 +37,21 @@ export default function NewEntry() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleVesselSelect = ({ name, imo, mmsi }) => {
-    setForm(f => ({ ...f, vessel_name: name, imo: imo||'', mmsi: mmsi||'' }))
+  const handleVesselSelect = ({ name, imo, mmsi, call_sign, flag, vessel_type, gt, dwt, loa, beam, year_built }) => {
+    setForm(f => ({
+      ...f,
+      vessel_name:  name        || f.vessel_name,
+      imo:          imo         || f.imo,
+      mmsi:         mmsi        || f.mmsi,
+      call_sign:    call_sign   || f.call_sign,
+      flag:         flag        || f.flag,
+      vessel_type:  vessel_type || f.vessel_type,
+      gt:           gt          || f.gt,
+      dwt:          dwt         || f.dwt,
+      loa:          loa         || f.loa,
+      beam:         beam        || f.beam,
+      year_built:   year_built  || f.year_built,
+    }))
   }
 
   const submit = async (e) => {
