@@ -116,6 +116,7 @@ export default function EditPanel({ operation, onClose, onSaved }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const save = async () => {
+    console.log('SAVE CLICKED, form:', JSON.stringify(form).slice(0,200))
     setSaving(true); setError('')
     try {
       // Only send known DB columns — strip computed/UI fields
@@ -339,8 +340,8 @@ export default function EditPanel({ operation, onClose, onSaved }) {
         </div>
 
         <div style={{padding:'14px 20px',borderTop:'1px solid var(--border)',display:'flex',gap:10,background:'var(--surface)'}}>
-          {activeTab===0 && <button onClick={save} disabled={saving} className="btn-primary" style={{flex:1}}>{saving?'Saving…':'✓ Save changes'}</button>}
-          <button onClick={onClose} className="btn-secondary" style={activeTab===1?{flex:1}:{}}>Close</button>
+          <button onClick={save} disabled={saving} className="btn-primary" style={{flex:1}}>{saving?'Saving…':'✓ Save changes'}</button>
+          <button onClick={onClose} className="btn-secondary">Close</button>
         </div>
       </div>
 
