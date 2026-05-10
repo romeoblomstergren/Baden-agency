@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react'
 
 function Check({ name, result }) {
-  const ok = result?.status === 'ok'
+  const ok      = result?.status === 'ok'
+  const warning = result?.status === 'warning'
   const loading = !result
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '12px 16px', background: 'var(--surface)',
       border: '1px solid var(--border)', borderRadius: 8,
-      borderLeft: `4px solid ${loading ? 'var(--muted)' : ok ? 'var(--green)' : 'var(--red)'}`,
+      borderLeft: '4px solid ' + (loading ? 'var(--muted)' : ok ? 'var(--green)' : warning ? 'var(--amber)' : 'var(--red)'),
     }}>
       <div style={{ fontSize: '1.2rem' }}>
-        {loading ? '⏳' : ok ? '✅' : '❌'}
+        {loading ? '⏳' : ok ? '✅' : warning ? '⚠️' : '❌'}
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{name}</div>
         {result && (
-          <div style={{ fontSize: '0.75rem', color: ok ? 'var(--green)' : 'var(--red)', marginTop: 2 }}>
+          <div style={{ fontSize: '0.75rem', color: ok ? 'var(--green)' : warning ? 'var(--amber)' : 'var(--red)', marginTop: 2 }}>
             {ok
-              ? result.ms ? `${result.ms}ms` : result.columns ? `Columns: ${result.columns.join(', ')}` : 'Connected'
-              : result.detail || result.message || result.code || 'Failed'}
+              ? (result.ms ? result.ms + 'ms' : result.columns ? result.columns : result.vessel ? result.vessel : 'Connected')
+              : (result.detail || result.message || (result.code ? 'HTTP ' + result.code : 'Failed'))}
           </div>
         )}
         {loading && <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>Checking…</div>}
@@ -57,18 +58,18 @@ export default function Health() {
         <div>
           <h1>System Health</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginTop: 2 }}>
-            {lastRun ? `Last checked: ${lastRun.toLocaleTimeString('en-GB')}` : 'Checking systems…'}
+            {lastRun ? 'Last checked: ' + lastRun.toLocaleTimeString('en-GB') : 'Checking systems…'}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {data && (
             <span style={{
-              background: allOk ? 'var(--green-bg)' : 'var(--red-bg)',
-              color: allOk ? 'var(--green)' : 'var(--red)',
+              background: allOk ? 'var(--green-bg)' : 'var(--amber-bg)',
+              color: allOk ? 'var(--green)' : 'var(--amber)',
               fontWeight: 700, fontSize: '0.82rem',
               padding: '6px 14px', borderRadius: 20,
             }}>
-              {allOk ? '✅ All systems OK' : '⚠️ Issues detected'}
+              {allOk ? '✅ All systems OK' : '⚠️ Check results below'}
             </span>
           )}
           <button onClick={runChecks} disabled={loading} className="btn-secondary btn-sm">
