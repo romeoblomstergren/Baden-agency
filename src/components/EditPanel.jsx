@@ -226,36 +226,39 @@ export default function EditPanel({ operation, onClose, onSaved }) {
                 <label className="form-label">Vessel Name</label>
                 <input value={form.vessel_name||''} onChange={e=>set('vessel_name',e.target.value)} style={{ marginBottom:6 }}/>
                 <VesselSearch value="" onChange={()=>{}} onVesselSelect={async v => {
-                  // Build fields object from vessel data
-                  const fields = {}
-                  if (v.name)        fields.vessel_name = v.name
-                  if (v.imo)         fields.imo         = v.imo
-                  if (v.mmsi)        fields.mmsi        = v.mmsi
-                  if (v.call_sign)   fields.call_sign   = v.call_sign
-                  if (v.flag)        fields.flag        = v.flag
-                  if (v.vessel_type) fields.vessel_type = v.vessel_type
-                  if (v.gt)          fields.gt          = v.gt
-                  if (v.dwt)         fields.dwt         = v.dwt
-                  if (v.loa)         fields.loa         = v.loa
-                  if (v.beam)        fields.beam        = v.beam
-                  if (v.year_built)  fields.year_built  = v.year_built
-                  // 1. Update local form state immediately
-                  setForm(f => ({ ...f, ...fields }))
-                  // 2. Save directly to DB — don't wait for Save button
-                  if (operation?.id && Object.keys(fields).length > 0) {
-                    const { error } = await supabase.from('operations').update(fields).eq('id', operation.id)
-                    if (error) console.error('Vessel particulars save error:', error)
-                    else console.log('Vessel particulars saved:', Object.keys(fields))
+                  // Use null for empty strings so DB stores null not ""
+                  const val = x => (x !== undefined && x !== null && x !== '') ? x : null
+                  const fields = {
+                    vessel_name: val(v.name),
+                    imo:         val(v.imo),
+                    mmsi:        val(v.mmsi),
+                    call_sign:   val(v.call_sign),
+                    flag:        val(v.flag),
+                    vessel_type: val(v.vessel_type),
+                    gt:          val(v.gt),
+                    dwt:         val(v.dwt),
+                    loa:         val(v.loa),
+                    beam:        val(v.beam),
+                    year_built:  val(v.year_built),
                   }
-                  // 3. Upsert to vessels table for future reference
-                  if (v.imo) {
+                  // Remove nulls so we don't overwrite existing good data with nulls
+                  const toSave = Object.fromEntries(Object.entries(fields).filter(([,v]) => v !== null))
+                  // Update local form state
+                  setForm(f => ({ ...f, ...toSave }))
+                  // Save to DB immediately
+                  if (operation?.id && Object.keys(toSave).length > 0) {
+                    const { error } = await supabase.from('operations').update(toSave).eq('id', operation.id)
+                    if (error) console.error('Save error:', error)
+                    else console.log('Saved:', Object.keys(toSave))
+                  }
+                  // Upsert to vessels table
+                  if (val(v.imo)) {
                     await supabase.from('vessels').upsert({
-                      name: v.name || '', imo: v.imo,
-                      mmsi: v.mmsi || null, call_sign: v.call_sign || null,
-                      flag: v.flag || null, vessel_type: v.vessel_type || null,
-                      gt: v.gt || null, dwt: v.dwt || null,
-                      loa: v.loa || null, beam: v.beam || null,
-                      year_built: v.year_built || null,
+                      name: val(v.name) || '', imo: val(v.imo),
+                      mmsi: val(v.mmsi), call_sign: val(v.call_sign),
+                      flag: val(v.flag), vessel_type: val(v.vessel_type),
+                      gt: val(v.gt), dwt: val(v.dwt), loa: val(v.loa),
+                      beam: val(v.beam), year_built: val(v.year_built),
                     }, { onConflict: 'imo', ignoreDuplicates: false })
                   }
                 }}/>
