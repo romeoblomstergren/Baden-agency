@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import LivePosition from '../components/LivePosition'
 import LivePosition from '../components/LivePosition'
+import LivePosition from '../components/LivePosition'
 import { useAIContext } from '../context/AIContext'
 import { Link } from 'react-router-dom'
 import { useActiveVessels, useOperations } from '../hooks/useOperations'
@@ -244,6 +245,7 @@ function KanbanCard({ op, onEdit, onTasks, onTrack, onDuplicated, color }) {
         <ETABadge label="ETB" dateStr={op.etb} />
         <ETABadge label="ETD" dateStr={op.etd} />
       </div>
+      {(op.mmsi || op.imo) && <LivePosition mmsi={op.mmsi} imo={op.imo} inline />}
       {(op.mmsi || op.imo) && <LivePosition mmsi={op.mmsi} imo={op.imo} inline />}
       {(op.mmsi || op.imo) && <LivePosition mmsi={op.mmsi} imo={op.imo} inline />}
       {op.client_name && <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 6 }}>👤 {op.client_name}</div>}
