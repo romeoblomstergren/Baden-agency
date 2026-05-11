@@ -5,7 +5,6 @@ import { deleteOperation } from '../hooks/useOperations'
 import { useOperationLogs } from '../hooks/usePortInfo'
 import { useAI } from '../hooks/useAI'
 import { supabase } from '../lib/supabase'
-import VesselCompliance from './VesselCompliance'
 import { VESSEL_STATUSES, ENTRY_STATUSES, formatDate, formatMoney } from '../lib/constants'
 
 const EMAIL_TYPES = [
