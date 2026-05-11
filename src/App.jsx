@@ -17,6 +17,7 @@ import VesselHistory from './pages/VesselHistory'
 import Contacts     from './pages/Contacts'
 import PortOverview from './pages/PortOverview'
 import Health       from './pages/Health'
+import Tasks        from './pages/Tasks'
 import './styles.css'
 
 function Protected({ children }) {
