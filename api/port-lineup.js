@@ -64,7 +64,7 @@ Schema: {
             content: `Generate a realistic port lineup for ${port}${country ? ', ' + country : ''} as of today.
 Include 10-15 vessels that would typically be expected, alongside, or recently arrived.
 Use realistic vessel names (MV prefix for bulk/general, MT for tankers), IMO numbers (7 digits starting with 9), appropriate flags and cargo for this port.
-Status options: Expected, Alongside, In Port, Sailed.
+Status options: Expected, Alongside, At Anchorage, Sailed.
 Make ETAs realistic relative to today's date (May 2026).`
           }
         ]
