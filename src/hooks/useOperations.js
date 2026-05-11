@@ -73,6 +73,14 @@ export async function createOperation(values) {
     .select()
     .single()
   if (error) throw error
+  // Auto-add to VesselAPI monitoring if MMSI is known
+  if (data?.mmsi) {
+    fetch('/api/vessel-watch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mmsi: data.mmsi, action: 'add' }),
+    }).catch(() => {}) // fire and forget
+  }
   return data
 }
 
